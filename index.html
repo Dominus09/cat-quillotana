@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Catálogo Quillotana</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f4f4;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+}
+
+input{
+width:100%;
+padding:10px;
+margin-bottom:20px;
+font-size:16px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+gap:15px;
+}
+
+.card{
+background:white;
+border-radius:8px;
+padding:10px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card img{
+width:100%;
+height:180px;
+object-fit:contain;
+background:#fff;
+}
+
+.name{
+font-weight:bold;
+margin-top:8px;
+}
+
+.stock{
+color:green;
+font-size:14px;
+}
+
+.category{
+font-size:12px;
+color:gray;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Catálogo Quillotana</h1>
+
+<input id="search" placeholder="Buscar producto...">
+
+<div class="grid" id="grid"></div>
+
+<script>
+
+let productos=[]
+
+async function cargar(){
+
+const res=await fetch("https://api.quillotana.cl/catalogo")
+const data=await res.json()
+
+productos=data.productos
+
+render(productos)
+
+}
+
+function render(lista){
+
+const grid=document.getElementById("grid")
+
+grid.innerHTML=""
+
+lista.forEach(p=>{
+
+const card=document.createElement("div")
+
+card.className="card"
+
+card.innerHTML=`
+
+<img src="${p.image}" onerror="this.src='https://via.placeholder.com/200'">
+
+<div class="name">${p.name}</div>
+
+<div>${p.variant || ""}</div>
+
+<div class="stock">Stock: ${p.stock}</div>
+
+<div class="category">${p.category}</div>
+
+`
+
+grid.appendChild(card)
+
+})
+
+}
+
+document.getElementById("search").addEventListener("input",e=>{
+
+const texto=e.target.value.toLowerCase()
+
+const filtrados=productos.filter(p=>
+
+p.name.toLowerCase().includes(texto) ||
+
+(p.variant && p.variant.toLowerCase().includes(texto)) ||
+
+(p.barcode && p.barcode.includes(texto))
+
+)
+
+render(filtrados)
+
+})
+
+cargar()
+
+</script>
+
+</body>
+</html>
