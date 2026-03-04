@@ -99,7 +99,9 @@ card.className="card"
 
 card.innerHTML=`
 
-<img src="${p.image}" onerror="this.src='https://via.placeholder.com/200'">
+<img 
+  src="${p.image}" 
+  onerror="this.onerror=null;this.src='https://api.quillotana.cl/images/placeholder.webp'">
 
 <div class="name">${p.name}</div>
 
