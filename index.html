@@ -6,41 +6,69 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Catálogo La Quillotana</title>
+<title>Catálogo Distribuidora La Quillotana</title>
 
 <style>
 
 body{
-font-family:Arial;
+font-family:Arial, Helvetica, sans-serif;
 margin:0;
-background:#f5f6f8;
+background:#f4f6f9;
 }
+
+/* HEADER */
 
 header{
-background:#0f4c81;
+background:#0b3a6f;
 color:white;
-padding:15px 20px;
-font-size:22px;
-font-weight:bold;
+padding:12px 20px;
+display:flex;
+align-items:center;
+gap:15px;
+box-shadow:0 2px 6px rgba(0,0,0,0.15);
 }
+
+header img{
+height:40px;
+}
+
+header h1{
+font-size:20px;
+margin:0;
+}
+
+/* CONTENEDOR */
 
 .container{
-padding:20px;
 max-width:1400px;
 margin:auto;
+padding:20px;
 }
 
-.search{
-margin-bottom:20px;
-}
+/* BUSCADOR */
 
 .search input{
 width:100%;
 padding:12px;
-font-size:16px;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:15px;
+}
+
+/* FILTROS */
+
+.filters{
+margin-top:10px;
+margin-bottom:20px;
+}
+
+.filters select{
+padding:10px;
 border-radius:6px;
 border:1px solid #ccc;
 }
+
+/* GRID */
 
 .grid{
 display:grid;
@@ -48,22 +76,24 @@ grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
 gap:18px;
 }
 
+/* CARD */
+
 .card{
 background:white;
 border-radius:8px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
 overflow:hidden;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
 transition:0.2s;
 }
 
 .card:hover{
 transform:translateY(-4px);
-box-shadow:0 6px 16px rgba(0,0,0,0.15);
+box-shadow:0 8px 20px rgba(0,0,0,0.2);
 }
 
 .card img{
 width:100%;
-height:180px;
+height:170px;
 object-fit:contain;
 background:white;
 padding:10px;
@@ -74,27 +104,26 @@ padding:12px;
 }
 
 .product-name{
-font-size:15px;
 font-weight:bold;
-margin-bottom:6px;
+font-size:15px;
+margin-bottom:5px;
 }
 
 .variant{
 font-size:13px;
 color:#555;
-margin-bottom:8px;
 }
 
-.stock{
-font-size:13px;
-color:#0f4c81;
-font-weight:bold;
+.category{
+font-size:12px;
+color:#888;
+margin-top:4px;
 }
 
 .footer{
 text-align:center;
-padding:20px;
-color:#666;
+padding:25px;
+color:#777;
 font-size:13px;
 }
 
@@ -105,7 +134,11 @@ font-size:13px;
 <body>
 
 <header>
-Catálogo de Productos – La Quillotana
+
+<img src="https://api.quillotana.cl/images/logo.webp">
+
+<h1>Catálogo Distribuidora La Quillotana</h1>
+
 </header>
 
 <div class="container">
@@ -114,12 +147,18 @@ Catálogo de Productos – La Quillotana
 <input type="text" id="search" placeholder="Buscar producto...">
 </div>
 
+<div class="filters">
+<select id="categoryFilter">
+<option value="all">Todas las categorías</option>
+</select>
+</div>
+
 <div class="grid" id="catalog"></div>
 
 </div>
 
 <div class="footer">
-Catálogo generado automáticamente
+Distribuidora La Quillotana – Catálogo de productos
 </div>
 
 <script>
@@ -128,13 +167,37 @@ let productos=[]
 
 async function cargarCatalogo(){
 
-const res = await fetch("https://api.quillotana.cl/catalogo")
-
-const data = await res.json()
+const res=await fetch("https://api.quillotana.cl/catalogo")
+const data=await res.json()
 
 productos=data.productos
 
+generarCategorias()
+
 mostrar(productos)
+
+}
+
+function generarCategorias(){
+
+const set=new Set()
+
+productos.forEach(p=>{
+if(p.category) set.add(p.category)
+})
+
+const select=document.getElementById("categoryFilter")
+
+Array.from(set).sort().forEach(cat=>{
+
+const option=document.createElement("option")
+
+option.value=cat
+option.textContent=cat
+
+select.appendChild(option)
+
+})
 
 }
 
@@ -147,6 +210,7 @@ grid.innerHTML=""
 lista.forEach(p=>{
 
 const card=document.createElement("div")
+
 card.className="card"
 
 card.innerHTML=`
@@ -165,8 +229,8 @@ ${p.name}
 ${p.variant || ""}
 </div>
 
-<div class="stock">
-Stock disponible
+<div class="category">
+${p.category}
 </div>
 
 </div>
@@ -178,20 +242,32 @@ grid.appendChild(card)
 
 }
 
-document.getElementById("search").addEventListener("input",(e)=>{
+function filtrar(){
 
-const q=e.target.value.toLowerCase()
+const texto=document.getElementById("search").value.toLowerCase()
 
-const filtrados=productos.filter(p=>
+const categoria=document.getElementById("categoryFilter").value
 
-p.name.toLowerCase().includes(q) ||
-(p.variant && p.variant.toLowerCase().includes(q))
+const filtrados=productos.filter(p=>{
 
-)
+const coincideTexto=
+p.name.toLowerCase().includes(texto) ||
+(p.variant && p.variant.toLowerCase().includes(texto))
+
+const coincideCategoria=
+categoria==="all" || p.category===categoria
+
+return coincideTexto && coincideCategoria
+
+})
 
 mostrar(filtrados)
 
-})
+}
+
+document.getElementById("search").addEventListener("input",filtrar)
+
+document.getElementById("categoryFilter").addEventListener("change",filtrar)
 
 cargarCatalogo()
 
