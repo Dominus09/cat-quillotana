@@ -1,6 +1,6 @@
 import type { Client, Product, Order, CreateOrderPayload } from '@/lib/types'
 
-const API_BASE_URL = 'https://api.quillotana.cl/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 // -------------------------------------
 // GET CATALOG
