@@ -86,10 +86,10 @@ export function ProductCard({ product, onCartUpdate }: ProductCardProps) {
           </div>
         ) : (
           <Image
-            src={imageUrl}
+            src={product.image_url || "/placeholder.jpg"}
             alt={product.product_name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-40 object-contain"
             onError={() => setImageError(true)}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
