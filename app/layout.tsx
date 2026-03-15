@@ -1,14 +1,14 @@
-import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const _geist = Geist({ subsets: ["latin"] });
+const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Catálogo Mayorista | La Quillotana',
-  description: 'Catálogo de productos mayoristas de La Quillotana Distribuidora. Accede a precios exclusivos para clientes.',
+  title: 'Catálogo Mayorista | Distribuidora La Quillotana',
+  description: 'Catálogo mayorista de productos - Distribuidora La Quillotana',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -29,12 +29,6 @@ export const metadata: Metadata = {
   },
 }
 
-export const viewport: Viewport = {
-  themeColor: '#E30613',
-  width: 'device-width',
-  initialScale: 1,
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,9 +36,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {children}
-        <Toaster />
         <Analytics />
       </body>
     </html>

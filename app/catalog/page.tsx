@@ -1,250 +1,281 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { Filter, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { ClientHeader } from '@/components/client-header'
-import { FiltersSidebar, type SortOption } from '@/components/filters-sidebar'
-import { ProductCard } from '@/components/product-card'
-import { CartPanel } from '@/components/cart-panel'
-import { LoadingScreen } from '@/components/loading-screen'
-import { getProducts } from '@/services/api'
-import { getSession } from '@/lib/session'
-import type { Product } from '@/lib/types'
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Filter } from "lucide-react"
+import { useCatalog } from "@/hooks/use-catalog"
+import { ProductCard } from "@/components/product-card"
+import { ClientHeader } from "@/components/client-header"
+import { FiltersSidebar } from "@/components/filters-sidebar"
+import { CartPanel } from "@/components/cart-panel"
+import { LoadingScreen } from "@/components/loading-screen"
+import {
+  getSession,
+  clearSession,
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  clearCart,
+  getCartItemCount,
+} from "@/lib/session"
+import type { ClientSession, CartItem, Product } from "@/types/catalog"
 
 export default function CatalogPage() {
   const router = useRouter()
-  const products = await getProducts()
-  const [isLoading, setIsLoading] = useState(true)
-  const [cartOpen, setCartOpen] = useState(false)
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const { products, isLoading, error } = useCatalog()
   
-  // Search and filters
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [showOnlyStock, setShowOnlyStock] = useState(false)
-  const [showOnlyOffers, setShowOnlyOffers] = useState(false)
-  const [sortBy, setSortBy] = useState<SortOption>('default')
+  const [session, setSession] = useState<ClientSession | null>(null)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [stockFilter, setStockFilter] = useState<"all" | "available" | "low">("all")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const session = getSession()
-    if (!session) {
-      router.push('/')
+    setMounted(true)
+    const clientSession = getSession()
+    if (!clientSession) {
+      router.push("/")
       return
     }
-
-    async function loadProducts() {
-      try {
-        const data = await getProducts()
-        setProducts(data)
-      } catch (error) {
-        console.error('Error loading products:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadProducts()
+    setSession(clientSession)
+    setCart(getCart())
   }, [router])
 
-  // Get unique categories
+  // Extract unique categories
   const categories = useMemo(() => {
-    const cats = new Set(products.map((p) => p.product_type))
-    return Array.from(cats).sort()
+    const types = new Set(products.map((p) => p.product_type))
+    return Array.from(types).sort()
   }, [products])
 
-  // Filter and sort products
+  // Filter products
   const filteredProducts = useMemo(() => {
-    let result = [...products]
+    let filtered = products
 
     // Search filter
-    if (searchQuery) {
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      result = result.filter(
+      filtered = filtered.filter(
         (p) =>
-          p.product_name.toLowerCase().includes(query) ||
-          p.sku.toLowerCase().includes(query) ||
-          p.product_type.toLowerCase().includes(query)
+          p.product.toLowerCase().includes(query) ||
+          p.variant.toLowerCase().includes(query) ||
+          p.barcode.includes(query)
       )
     }
 
     // Category filter
-    if (selectedCategories.length > 0) {
-      result = result.filter((p) => selectedCategories.includes(p.product_type))
+    if (selectedCategory) {
+      filtered = filtered.filter((p) => p.product_type === selectedCategory)
     }
 
     // Stock filter
-    if (showOnlyStock) {
-      result = result.filter((p) => p.stock > 0)
+    if (stockFilter === "available") {
+      filtered = filtered.filter((p) => p.stock > 10)
+    } else if (stockFilter === "low") {
+      filtered = filtered.filter((p) => p.stock > 0 && p.stock <= 10)
     }
 
-    // Offers filter (for demo, products with stock < 20 are "offers")
-    if (showOnlyOffers) {
-      result = result.filter((p) => p.stock > 0 && p.stock <= 10)
-    }
+    return filtered
+  }, [products, searchQuery, selectedCategory, stockFilter])
 
-    // Sort
-    switch (sortBy) {
-      case 'price-asc':
-        result.sort((a, b) => a.price - b.price)
-        break
-      case 'price-desc':
-        result.sort((a, b) => b.price - a.price)
-        break
-      case 'name-asc':
-        result.sort((a, b) => a.product_name.localeCompare(b.product_name))
-        break
-      default:
-        break
-    }
+  const handleAddToCart = (product: Product, quantity: number) => {
+    const updatedCart = addToCart(product, quantity)
+    setCart(updatedCart)
+  }
 
-    return result
-  }, [products, searchQuery, selectedCategories, showOnlyStock, showOnlyOffers, sortBy])
+  const handleUpdateQuantity = (variantId: number, quantity: number) => {
+    const updatedCart = updateCartItem(variantId, quantity)
+    setCart(updatedCart)
+  }
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0
-    if (selectedCategories.length > 0) count += selectedCategories.length
-    if (showOnlyStock) count++
-    if (showOnlyOffers) count++
-    if (sortBy !== 'default') count++
-    return count
-  }, [selectedCategories, showOnlyStock, showOnlyOffers, sortBy])
+  const handleRemoveItem = (variantId: number) => {
+    const updatedCart = removeFromCart(variantId)
+    setCart(updatedCart)
+  }
 
-  const clearAllFilters = () => {
-    setSelectedCategories([])
-    setShowOnlyStock(false)
-    setShowOnlyOffers(false)
-    setSortBy('default')
-    setSearchQuery('')
+  const handleClearCart = () => {
+    clearCart()
+    setCart([])
+  }
+
+  const handleLogout = () => {
+    clearSession()
+    router.push("/")
+  }
+
+  if (!mounted || !session) {
+    return <LoadingScreen />
   }
 
   if (isLoading) {
     return <LoadingScreen />
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <Image
+            src="/logo-seal.png"
+            alt=""
+            width={80}
+            height={80}
+            className="mx-auto opacity-50 mb-4"
+          />
+          <h1 className="text-xl font-semibold text-foreground mb-2">
+            Error al cargar el catálogo
+          </h1>
+          <p className="text-muted-foreground mb-4">
+            No pudimos conectar con el servidor. Por favor intenta de nuevo.
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-primary text-primary-foreground hover:bg-[#c90510]"
+          >
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--quillotana-light)] relative">
-      {/* Background watermark */}
-      <div className="fixed inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none z-0">
-        <Image
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%201-gJM6SQT6MRQSxwUtV0PzXsCUPapEMO.png"
-          alt=""
-          width={600}
-          height={600}
-          className="w-[600px] h-[600px] object-contain"
-        />
+    <div className="min-h-screen bg-background">
+      {/* Background Watermark */}
+      <div className="hidden lg:block fixed inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
+          <Image
+            src="/logo-seal.png"
+            alt=""
+            width={500}
+            height={500}
+            className="select-none"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
-      <ClientHeader onCartClick={() => setCartOpen(true)} onSearch={setSearchQuery} />
+      {/* Header */}
+      <ClientHeader
+        session={session}
+        cartItemCount={getCartItemCount(cart)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onCartClick={() => setCartOpen(true)}
+        onLogout={handleLogout}
+      />
 
-      <main className="container mx-auto px-4 py-6 relative z-10">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Desktop Filters */}
-          <div className="hidden lg:block">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="flex gap-6">
+          {/* Filters Sidebar */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
             <FiltersSidebar
               categories={categories}
-              selectedCategories={selectedCategories}
-              onCategoryChange={setSelectedCategories}
-              showOnlyStock={showOnlyStock}
-              onShowOnlyStockChange={setShowOnlyStock}
-              showOnlyOffers={showOnlyOffers}
-              onShowOnlyOffersChange={setShowOnlyOffers}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              stockFilter={stockFilter}
+              onStockFilterChange={setStockFilter}
+              isOpen={filtersOpen}
+              onClose={() => setFiltersOpen(false)}
             />
           </div>
 
-          {/* Main content */}
-          <div className="flex-1">
-            {/* Mobile filter button and results count */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" className="lg:hidden">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filtros
-                      {activeFiltersCount > 0 && (
-                        <span className="ml-2 bg-[var(--quillotana-red)] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                          {activeFiltersCount}
-                        </span>
-                      )}
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-80">
-                    <SheetHeader>
-                      <SheetTitle>Filtros</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4">
-                      <FiltersSidebar
-                        categories={categories}
-                        selectedCategories={selectedCategories}
-                        onCategoryChange={setSelectedCategories}
-                        showOnlyStock={showOnlyStock}
-                        onShowOnlyStockChange={setShowOnlyStock}
-                        showOnlyOffers={showOnlyOffers}
-                        onShowOnlyOffersChange={setShowOnlyOffers}
-                        sortBy={sortBy}
-                        onSortChange={setSortBy}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Mobile Filter Button */}
+            <div className="lg:hidden mb-4">
+              <Button
+                variant="outline"
+                onClick={() => setFiltersOpen(true)}
+                className="w-full justify-center"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+              </Button>
+            </div>
 
-                {activeFiltersCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearAllFilters}
-                    className="text-muted-foreground"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Limpiar filtros
-                  </Button>
-                )}
-              </div>
-
+            {/* Products Count */}
+            <div className="mb-4">
               <p className="text-sm text-muted-foreground">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+                {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""} encontrado{filteredProducts.length !== 1 ? "s" : ""}
               </p>
             </div>
 
-            {/* Product grid */}
-            {filteredProducts.length === 0 ? (
-              <div className="bg-card rounded-lg p-12 text-center">
+            {/* Product Grid */}
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.variant_id}
+                    product={product}
+                    priceList={session.price_list}
+                    onAddToCart={handleAddToCart}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%201-gJM6SQT6MRQSxwUtV0PzXsCUPapEMO.png"
-                  alt="Quillotana"
+                  src="/logo-seal.png"
+                  alt=""
                   width={80}
                   height={80}
                   className="mx-auto opacity-30 mb-4"
                 />
-                <h3 className="text-lg font-medium text-[var(--quillotana-blue)] mb-2">
-                  No se encontraron productos
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Intenta ajustar los filtros o buscar otro término.
+                <p className="text-muted-foreground">
+                  No se encontraron productos con los filtros seleccionados.
                 </p>
-                <Button variant="outline" onClick={clearAllFilters}>
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setSearchQuery("")
+                    setSelectedCategory(null)
+                    setStockFilter("all")
+                  }}
+                  className="text-primary mt-2"
+                >
                   Limpiar filtros
                 </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.variant_id} product={product} />
-                ))}
               </div>
             )}
           </div>
         </div>
-      </main>
+      </div>
 
-      {/* Cart panel */}
-      <CartPanel open={cartOpen} onOpenChange={setCartOpen} />
+      {/* Mobile Filters Sidebar */}
+      <div className="lg:hidden">
+        <FiltersSidebar
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={(cat) => {
+            setSelectedCategory(cat)
+            setFiltersOpen(false)
+          }}
+          stockFilter={stockFilter}
+          onStockFilterChange={(filter) => {
+            setStockFilter(filter)
+            setFiltersOpen(false)
+          }}
+          isOpen={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+        />
+      </div>
+
+      {/* Cart Panel */}
+      <CartPanel
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        items={cart}
+        priceList={session.price_list}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onClearCart={handleClearCart}
+      />
     </div>
   )
 }

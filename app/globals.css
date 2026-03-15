@@ -4,44 +4,38 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* La Quillotana Brand Colors */
-  --quillotana-red: #E30613;
-  --quillotana-red-dark: #c00510;
-  --quillotana-blue: #1E3557;
-  --quillotana-light: #F4F4F4;
-  
   --background: #F4F4F4;
   --foreground: #1E3557;
-  --card: #ffffff;
+  --card: #FFFFFF;
   --card-foreground: #1E3557;
-  --popover: #ffffff;
+  --popover: #FFFFFF;
   --popover-foreground: #1E3557;
   --primary: #E30613;
-  --primary-foreground: #ffffff;
+  --primary-foreground: #FFFFFF;
   --secondary: #1E3557;
-  --secondary-foreground: #ffffff;
-  --muted: #e8e8e8;
+  --secondary-foreground: #FFFFFF;
+  --muted: #E8E8E8;
   --muted-foreground: #64748b;
-  --accent: #1E3557;
-  --accent-foreground: #ffffff;
+  --accent: #E30613;
+  --accent-foreground: #FFFFFF;
   --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --destructive-foreground: #FFFFFF;
+  --border: #E0E0E0;
+  --input: #E0E0E0;
   --ring: #E30613;
   --chart-1: #E30613;
   --chart-2: #1E3557;
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: #ffffff;
+  --chart-3: #64748b;
+  --chart-4: #F4F4F4;
+  --chart-5: #FFFFFF;
+  --radius: 0.5rem;
+  --sidebar: #FFFFFF;
   --sidebar-foreground: #1E3557;
   --sidebar-primary: #E30613;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F4F4F4;
   --sidebar-accent-foreground: #1E3557;
-  --sidebar-border: #e2e8f0;
+  --sidebar-border: #E0E0E0;
   --sidebar-ring: #E30613;
 }
 

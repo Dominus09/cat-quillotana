@@ -1,130 +1,154 @@
-'use client'
+"use client"
 
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Separator } from '@/components/ui/separator'
-
-export type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc'
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { X, Search } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface FiltersSidebarProps {
   categories: string[]
-  selectedCategories: string[]
-  onCategoryChange: (categories: string[]) => void
-  showOnlyStock: boolean
-  onShowOnlyStockChange: (value: boolean) => void
-  showOnlyOffers: boolean
-  onShowOnlyOffersChange: (value: boolean) => void
-  sortBy: SortOption
-  onSortChange: (value: SortOption) => void
+  selectedCategory: string | null
+  onCategoryChange: (category: string | null) => void
+  stockFilter: "all" | "available" | "low"
+  onStockFilterChange: (filter: "all" | "available" | "low") => void
+  isOpen: boolean
+  onClose: () => void
 }
 
 export function FiltersSidebar({
   categories,
-  selectedCategories,
+  selectedCategory,
   onCategoryChange,
-  showOnlyStock,
-  onShowOnlyStockChange,
-  showOnlyOffers,
-  onShowOnlyOffersChange,
-  sortBy,
-  onSortChange,
+  stockFilter,
+  onStockFilterChange,
+  isOpen,
+  onClose,
 }: FiltersSidebarProps) {
-  const handleCategoryToggle = (category: string) => {
-    if (selectedCategories.includes(category)) {
-      onCategoryChange(selectedCategories.filter((c) => c !== category))
-    } else {
-      onCategoryChange([...selectedCategories, category])
-    }
-  }
+  const [categorySearch, setCategorySearch] = useState("")
+
+  const filteredCategories = categories.filter((cat) =>
+    cat.toLowerCase().includes(categorySearch.toLowerCase())
+  )
 
   return (
-    <aside className="w-full lg:w-64 bg-card rounded-lg border border-border p-4 h-fit sticky top-20">
-      <h2 className="font-semibold text-lg text-[var(--quillotana-blue)] mb-4">Filtros</h2>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Categories */}
-      <div className="mb-6">
-        <h3 className="font-medium text-sm text-foreground mb-3">Categoría</h3>
-        <div className="space-y-2">
-          {categories.map((category) => (
-            <div key={category} className="flex items-center gap-2">
-              <Checkbox
-                id={`category-${category}`}
-                checked={selectedCategories.includes(category)}
-                onCheckedChange={() => handleCategoryToggle(category)}
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 lg:relative lg:transform-none lg:z-auto",
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        <div className="p-4 h-full overflow-y-auto">
+          {/* Mobile Close Button */}
+          <div className="flex items-center justify-between mb-4 lg:hidden">
+            <h2 className="text-sm font-semibold text-gray-700">Filtros</h2>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Categories */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              Categorías
+            </h3>
+            
+            {/* Category Search */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Buscar categoría"
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                className="pl-9 h-9 text-sm bg-gray-50 border-gray-200"
               />
-              <Label
-                htmlFor={`category-${category}`}
-                className="text-sm cursor-pointer"
-              >
-                {category}
-              </Label>
             </div>
-          ))}
+
+            <div className="space-y-1">
+              <button
+                onClick={() => onCategoryChange(null)}
+                className={cn(
+                  "w-full text-left py-2 px-3 rounded-md text-sm transition-colors",
+                  selectedCategory === null
+                    ? "bg-blue-50 text-blue-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                Todas las categorías
+              </button>
+              {filteredCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => onCategoryChange(category)}
+                  className={cn(
+                    "w-full text-left py-2 px-3 rounded-md text-sm transition-colors",
+                    selectedCategory === category
+                      ? "bg-blue-50 text-blue-700 font-semibold"
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Stock Filter */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              Disponibilidad
+            </h3>
+            <div className="space-y-1">
+              <button
+                onClick={() => onStockFilterChange("all")}
+                className={cn(
+                  "w-full text-left py-2 px-3 rounded-md text-sm transition-colors",
+                  stockFilter === "all"
+                    ? "bg-blue-50 text-blue-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => onStockFilterChange("available")}
+                className={cn(
+                  "w-full flex items-center gap-2 py-2 px-3 rounded-md text-sm transition-colors",
+                  stockFilter === "available"
+                    ? "bg-blue-50 text-blue-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <span className="w-2 h-2 rounded-full bg-green-500" />
+                Disponibles
+              </button>
+              <button
+                onClick={() => onStockFilterChange("low")}
+                className={cn(
+                  "w-full flex items-center gap-2 py-2 px-3 rounded-md text-sm transition-colors",
+                  stockFilter === "low"
+                    ? "bg-blue-50 text-blue-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                Últimas unidades
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <Separator className="my-4" />
-
-      {/* Stock filter */}
-      <div className="mb-6">
-        <h3 className="font-medium text-sm text-foreground mb-3">Disponibilidad</h3>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-stock"
-              checked={showOnlyStock}
-              onCheckedChange={(checked) => onShowOnlyStockChange(checked as boolean)}
-            />
-            <Label htmlFor="show-stock" className="text-sm cursor-pointer">
-              Solo con stock
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-offers"
-              checked={showOnlyOffers}
-              onCheckedChange={(checked) => onShowOnlyOffersChange(checked as boolean)}
-            />
-            <Label htmlFor="show-offers" className="text-sm cursor-pointer">
-              Ofertas
-            </Label>
-          </div>
-        </div>
-      </div>
-
-      <Separator className="my-4" />
-
-      {/* Sort */}
-      <div>
-        <h3 className="font-medium text-sm text-foreground mb-3">Ordenar por</h3>
-        <RadioGroup value={sortBy} onValueChange={(value) => onSortChange(value as SortOption)}>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="default" id="sort-default" />
-            <Label htmlFor="sort-default" className="text-sm cursor-pointer">
-              Relevancia
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="price-asc" id="sort-price-asc" />
-            <Label htmlFor="sort-price-asc" className="text-sm cursor-pointer">
-              Precio: menor a mayor
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="price-desc" id="sort-price-desc" />
-            <Label htmlFor="sort-price-desc" className="text-sm cursor-pointer">
-              Precio: mayor a menor
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="name-asc" id="sort-name-asc" />
-            <Label htmlFor="sort-name-asc" className="text-sm cursor-pointer">
-              Nombre: A-Z
-            </Label>
-          </div>
-        </RadioGroup>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 }

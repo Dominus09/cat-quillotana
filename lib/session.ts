@@ -1,26 +1,85 @@
-import type { Client } from './types'
+import type { ClientSession, CartItem, Product } from "@/types/catalog"
 
-const SESSION_KEY = 'quillotana_session'
+const SESSION_KEY = "quillotana_session"
+const CART_KEY = "quillotana_cart"
 
-export function getSession(): Client | null {
-  if (typeof window === 'undefined') return null
-  const session = localStorage.getItem(SESSION_KEY)
-  return session ? JSON.parse(session) : null
+export function getSession(): ClientSession | null {
+  if (typeof window === "undefined") return null
+  const data = sessionStorage.getItem(SESSION_KEY)
+  return data ? JSON.parse(data) : null
 }
 
-export function saveSession(client: Client): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(SESSION_KEY, JSON.stringify(client))
+export function setSession(session: ClientSession): void {
+  if (typeof window === "undefined") return
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
 }
 
 export function clearSession(): void {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem(SESSION_KEY)
-  localStorage.removeItem('quillotana_cart')
-  localStorage.removeItem('quillotana_orders')
+  if (typeof window === "undefined") return
+  sessionStorage.removeItem(SESSION_KEY)
+  sessionStorage.removeItem(CART_KEY)
 }
 
-export function isTestMode(): boolean {
-  const session = getSession()
-  return session?.rut === 'test'
+export function getCart(): CartItem[] {
+  if (typeof window === "undefined") return []
+  const data = sessionStorage.getItem(CART_KEY)
+  return data ? JSON.parse(data) : []
+}
+
+export function setCart(cart: CartItem[]): void {
+  if (typeof window === "undefined") return
+  sessionStorage.setItem(CART_KEY, JSON.stringify(cart))
+}
+
+export function addToCart(product: Product, quantity: number = 1): CartItem[] {
+  const cart = getCart()
+  const existingIndex = cart.findIndex(
+    (item) => item.product.variant_id === product.variant_id
+  )
+
+  if (existingIndex >= 0) {
+    cart[existingIndex].quantity += quantity
+  } else {
+    cart.push({ product, quantity })
+  }
+
+  setCart(cart)
+  return cart
+}
+
+export function updateCartItem(variantId: number, quantity: number): CartItem[] {
+  const cart = getCart()
+  const index = cart.findIndex((item) => item.product.variant_id === variantId)
+
+  if (index >= 0) {
+    if (quantity <= 0) {
+      cart.splice(index, 1)
+    } else {
+      cart[index].quantity = quantity
+    }
+  }
+
+  setCart(cart)
+  return cart
+}
+
+export function removeFromCart(variantId: number): CartItem[] {
+  const cart = getCart().filter((item) => item.product.variant_id !== variantId)
+  setCart(cart)
+  return cart
+}
+
+export function clearCart(): void {
+  setCart([])
+}
+
+export function getCartTotal(cart: CartItem[], priceList: string): number {
+  return cart.reduce((total, item) => {
+    const price = item.product.prices[priceList] || item.product.default_price
+    return total + price * item.quantity
+  }, 0)
+}
+
+export function getCartItemCount(cart: CartItem[]): number {
+  return cart.reduce((count, item) => count + item.quantity, 0)
 }

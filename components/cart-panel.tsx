@@ -1,255 +1,190 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Separator } from '@/components/ui/separator'
-import { Spinner } from '@/components/ui/spinner'
-import { Empty } from '@/components/ui/empty'
-import { getCart, updateCartQuantity, removeFromCart, clearCart, getCartTotal } from '@/lib/cart'
-import { getSession } from '@/lib/session'
-import { createOrder } from '@/services/api'
-import type { CartItem } from '@/lib/types'
-import { toast } from 'sonner'
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { X, Plus, Minus, Trash2, ShoppingBag } from "lucide-react"
+import type { CartItem } from "@/types/catalog"
 
 interface CartPanelProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  isOpen: boolean
+  onClose: () => void
+  items: CartItem[]
+  priceList: string
+  onUpdateQuantity: (variantId: number, quantity: number) => void
+  onRemoveItem: (variantId: number) => void
+  onClearCart: () => void
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    minimumFractionDigits: 0,
-  }).format(amount)
-}
+export function CartPanel({
+  isOpen,
+  onClose,
+  items,
+  priceList,
+  onUpdateQuantity,
+  onRemoveItem,
+  onClearCart,
+}: CartPanelProps) {
+  const total = items.reduce((sum, item) => {
+    const price = item.product.prices[priceList] || item.product.default_price
+    return sum + price * item.quantity
+  }, 0)
 
-export function CartPanel({ open, onOpenChange }: CartPanelProps) {
-  const router = useRouter()
-  const [items, setItems] = useState<CartItem[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setItems(getCart())
-    }
-  }, [open])
-
-  useEffect(() => {
-    const handleCartUpdate = () => {
-      setItems(getCart())
-    }
-    
-    window.addEventListener('cartUpdated', handleCartUpdate)
-    return () => window.removeEventListener('cartUpdated', handleCartUpdate)
-  }, [])
-
-  const handleUpdateQuantity = (variantId: number, newQuantity: number) => {
-    const updated = updateCartQuantity(variantId, newQuantity)
-    setItems(updated)
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
-  }
-
-  const handleRemove = (variantId: number) => {
-    const updated = removeFromCart(variantId)
-    setItems(updated)
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
-    toast.info('Producto eliminado del carrito')
-  }
-
-  const handleClearCart = () => {
-    clearCart()
-    setItems([])
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
-    toast.info('Carrito vaciado')
-  }
-
-  const handleConfirmOrder = async () => {
-    const session = getSession()
-    if (!session) {
-      router.push('/')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const order = await createOrder({
-        client_id: session.client_id,
-        company_id: 3,
-        office_id: 1,
-        items: items.map((item) => ({
-          variant_id: item.variant_id,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      })
-
-      // Store order info for confirmation page
-      localStorage.setItem('quillotana_last_order', JSON.stringify({
-        id: order.id,
-        total: getCartTotal(items),
-        created_at: order.created_at,
-        items: items,
-      }))
-
-      clearCart()
-      setItems([])
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
-      onOpenChange(false)
-      router.push('/confirmacion')
-    } catch (error) {
-      console.error('Error creating order:', error)
-      toast.error('Error al crear el pedido. Intenta nuevamente.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const total = getCartTotal(items)
+  const itemCount = items.reduce((count, item) => count + item.quantity, 0)
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col">
-        <SheetHeader>
-          <SheetTitle className="text-[var(--quillotana-blue)] flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5" />
-            Carrito de compras
-          </SheetTitle>
-        </SheetHeader>
+    <>
+      {/* Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50"
+          onClick={onClose}
+        />
+      )}
 
-        {items.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Empty
-              icon={ShoppingBag}
-              title="Tu carrito está vacío"
-              description="Agrega productos para comenzar tu pedido"
-            />
+      {/* Panel */}
+      <div
+        className={`
+          fixed top-0 right-0 h-full w-full max-w-md bg-card border-l border-border z-50 transform transition-transform duration-300
+          ${isOpen ? "translate-x-0" : "translate-x-full"}
+        `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-foreground">
+                Carrito ({itemCount} {itemCount === 1 ? "item" : "items"})
+              </h2>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
           </div>
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto py-4">
+
+          {/* Cart Items */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <ShoppingBag className="w-16 h-16 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">Tu carrito está vacío</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Agrega productos desde el catálogo
+                </p>
+              </div>
+            ) : (
               <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.variant_id} className="flex gap-3 bg-muted/50 rounded-lg p-3">
-                    <div className="w-16 h-16 bg-card rounded-md overflow-hidden flex-shrink-0">
-                      {item.image_url ? (
+                {items.map((item) => {
+                  const price =
+                    item.product.prices[priceList] || item.product.default_price
+                  return (
+                    <div
+                      key={item.product.variant_id}
+                      className="flex gap-3 p-3 bg-muted rounded-lg"
+                    >
+                      {/* Product Image */}
+                      <div className="w-16 h-16 rounded-md bg-card overflow-hidden flex-shrink-0">
                         <Image
-                          src={item.image_url}
-                          alt={item.product_name}
+                          src={item.product.image}
+                          alt={item.product.product}
                           width={64}
                           height={64}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
+                            target.src = "/logo-seal.png"
+                            target.className = "w-full h-full object-contain opacity-30 p-2"
                           }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Image
-                            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%201-gJM6SQT6MRQSxwUtV0PzXsCUPapEMO.png"
-                            alt="Quillotana"
-                            width={32}
-                            height={32}
-                            className="opacity-30"
-                          />
-                        </div>
-                      )}
-                    </div>
+                      </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm text-[var(--quillotana-blue)] line-clamp-2">
-                        {item.product_name}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
-                      <p className="text-sm font-semibold text-[var(--quillotana-red)] mt-1">
-                        {formatCurrency(item.price)}
-                      </p>
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                          {item.product.product}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {item.product.variant}
+                        </p>
+                        <p className="text-sm font-semibold text-primary mt-1">
+                          ${price.toLocaleString("es-CL")} c/u
+                        </p>
 
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center border border-border rounded-md bg-card">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleUpdateQuantity(item.variant_id, item.quantity - 1)}
-                            aria-label="Disminuir cantidad"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleUpdateQuantity(item.variant_id, item.quantity + 1)}
-                            aria-label="Aumentar cantidad"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        {/* Quantity Controls */}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center border border-border rounded-md bg-card">
+                            <button
+                              onClick={() =>
+                                onUpdateQuantity(
+                                  item.product.variant_id,
+                                  item.quantity - 1
+                                )
+                              }
+                              className="p-1 text-muted-foreground hover:text-foreground"
+                              aria-label="Disminuir cantidad"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-medium">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                onUpdateQuantity(
+                                  item.product.variant_id,
+                                  item.quantity + 1
+                                )
+                              }
+                              disabled={item.quantity >= item.product.stock}
+                              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                              aria-label="Aumentar cantidad"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">
-                            {formatCurrency(item.price * item.quantity)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => handleRemove(item.variant_id)}
+                          <button
+                            onClick={() => onRemoveItem(item.product.variant_id)}
+                            className="p-1 text-muted-foreground hover:text-destructive"
                             aria-label="Eliminar producto"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="border-t border-border pt-4 space-y-4">
-              <div className="flex items-center justify-between text-lg font-bold">
-                <span className="text-[var(--quillotana-blue)]">Total</span>
-                <span className="text-[var(--quillotana-red)]">{formatCurrency(total)}</span>
+          {/* Footer */}
+          {items.length > 0 && (
+            <div className="p-4 border-t border-border space-y-4">
+              <div className="flex items-center justify-between text-lg font-semibold">
+                <span className="text-foreground">Total:</span>
+                <span className="text-primary">
+                  ${total.toLocaleString("es-CL")}
+                </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-[#c90510]">
+                  Finalizar pedido
+                </Button>
                 <Button
                   variant="outline"
-                  className="flex-1"
-                  onClick={handleClearCart}
-                  disabled={isSubmitting}
+                  className="w-full"
+                  onClick={onClearCart}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
                   Vaciar carrito
-                </Button>
-                <Button
-                  className="flex-1 bg-[var(--quillotana-red)] hover:bg-[var(--quillotana-red-dark)] text-white"
-                  onClick={handleConfirmOrder}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <Spinner className="h-4 w-4" />
-                      Procesando...
-                    </span>
-                  ) : (
-                    'Confirmar pedido'
-                  )}
                 </Button>
               </div>
             </div>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
