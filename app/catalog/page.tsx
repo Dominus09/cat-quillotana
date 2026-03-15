@@ -1,16 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { Filter, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { ClientHeader } from '@/components/client-header'
-import { FiltersSidebar, type SortOption } from '@/components/filters-sidebar'
-import { ProductCard } from '@/components/product-card'
-import { CartPanel } from '@/components/cart-panel'
-import { LoadingScreen } from '@/components/loading-screen'
 import { getProducts } from '@/services/api'
 import { getSession } from '@/lib/session'
 import type { Product } from '@/lib/types'
@@ -21,14 +12,6 @@ export default function CatalogPage() {
 
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [cartOpen, setCartOpen] = useState(false)
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [showOnlyStock, setShowOnlyStock] = useState(false)
-  const [showOnlyOffers, setShowOnlyOffers] = useState(false)
-  const [sortBy, setSortBy] = useState<SortOption>('default')
 
   useEffect(() => {
 
@@ -62,3 +45,58 @@ export default function CatalogPage() {
     loadProducts()
 
   }, [router])
+
+  if (isLoading) {
+
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Cargando productos...
+      </div>
+    )
+
+  }
+
+  return (
+
+    <div className="min-h-screen p-8">
+
+      <h1 className="text-2xl font-bold mb-6">
+        Catálogo
+      </h1>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+        {products.map((product) => (
+
+          <div
+            key={product.variant_id}
+            className="border rounded-lg p-4"
+          >
+
+            <h2 className="font-semibold">
+              {product.product_name}
+            </h2>
+
+            <p>
+              SKU: {product.sku}
+            </p>
+
+            <p>
+              Stock: {product.stock}
+            </p>
+
+            <p className="font-bold">
+              ${product.price}
+            </p>
+
+          </div>
+
+        ))}
+
+      </div>
+
+    </div>
+
+  )
+
+}
