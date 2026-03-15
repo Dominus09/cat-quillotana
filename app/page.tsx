@@ -1,122 +1,64 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Spinner } from '@/components/ui/spinner'
-import { loginClient } from '@/services/api'
-import { saveSession } from '@/lib/session'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { ClientHeader } from '@/components/client-header'
+import { FiltersSidebar, type SortOption } from '@/components/filters-sidebar'
+import { ProductCard } from '@/components/product-card'
+import { CartPanel } from '@/components/cart-panel'
+import { LoadingScreen } from '@/components/loading-screen'
+import { getProducts } from '@/services/api'
+import { getSession } from '@/lib/session'
+import type { Product } from '@/lib/types'
 
-export default function LoginPage() {
+export default function CatalogPage() {
+
   const router = useRouter()
-  const [rut, setRut] = useState('')
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setIsLoading(true)
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-    try {
-      const client = await validateClient(rut.trim())
-      
-      if (client) {
-        saveSession(client)
-        router.push('/catalog')
-      } else {
-        setError('Tu RUT no está registrado. Contacta a tu ejecutivo de ventas.')
-      }
-    } catch {
-      setError('Error al validar el RUT. Intenta nuevamente.')
-    } finally {
-      setIsLoading(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [showOnlyStock, setShowOnlyStock] = useState(false)
+  const [showOnlyOffers, setShowOnlyOffers] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('default')
+
+  useEffect(() => {
+
+    const session = getSession()
+
+    if (!session) {
+      router.push('/')
+      return
     }
-  }
 
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-[var(--quillotana-light)] relative overflow-hidden">
-      {/* Background watermark */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-        <Image
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%201-gJM6SQT6MRQSxwUtV0PzXsCUPapEMO.png"
-          alt=""
-          width={800}
-          height={800}
-          className="w-[800px] h-[800px] object-contain"
-          priority
-        />
-      </div>
+    async function loadProducts() {
 
-      <div className="w-full max-w-md mx-auto px-6">
-        <div className="bg-card rounded-xl shadow-lg p-8 relative z-10">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%201-gJM6SQT6MRQSxwUtV0PzXsCUPapEMO.png"
-              alt="Quillotana Distribuidora"
-              width={180}
-              height={180}
-              className="w-44 h-44 object-contain"
-              priority
-            />
-          </div>
+      try {
 
-          {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-[var(--quillotana-blue)] mb-2 text-balance">
-              Bienvenido al catálogo mayorista
-            </h1>
-            <p className="text-muted-foreground">
-              Ingresa tu RUT para acceder a precios exclusivos.
-            </p>
-          </div>
+        const data = await getProducts()
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Field>
-              <FieldLabel htmlFor="rut">RUT cliente</FieldLabel>
-              <Input
-                id="rut"
-                type="text"
-                placeholder="12.345.678-9"
-                value={rut}
-                onChange={(e) => setRut(e.target.value)}
-                className="h-12 text-lg"
-                disabled={isLoading}
-                autoComplete="off"
-              />
-            </Field>
+        setProducts(data)
 
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
-            )}
+      } catch (error) {
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-lg font-semibold bg-[var(--quillotana-red)] hover:bg-[var(--quillotana-red-dark)] text-white"
-              disabled={isLoading || !rut.trim()}
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <Spinner className="w-5 h-5" />
-                  Verificando...
-                </span>
-              ) : (
-                'Entrar al catálogo'
-              )}
-            </Button>
-          </form>
+        console.error('Error loading products:', error)
 
-          {/* Test mode hint */}
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Modo prueba: escribe <span className="font-mono bg-muted px-1.5 py-0.5 rounded">test</span>
-          </p>
-        </div>
-      </div>
-    </main>
-  )
-}
+      } finally {
+
+        setIsLoading(false)
+
+      }
+
+    }
+
+    loadProducts()
+
+  }, [router])
