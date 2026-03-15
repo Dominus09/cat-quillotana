@@ -17,7 +17,7 @@ import type { Product } from '@/lib/types'
 
 export default function CatalogPage() {
   const router = useRouter()
-  const products = await getProducts()
+  export default async function CatalogPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [cartOpen, setCartOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
