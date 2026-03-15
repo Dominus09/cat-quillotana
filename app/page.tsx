@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
-import { validateClient } from '@/services/api'
+import { loginClient } from '@/services/api'
 import { saveSession } from '@/lib/session'
 
 export default function LoginPage() {
