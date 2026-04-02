@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, type ChangeEvent } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -85,7 +85,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     }
   }
 
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value
     if (v === "") {
       setQuantity(1)
@@ -152,8 +152,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </p>
         </div>
 
-        <div className="mt-3 flex items-center gap-2">
-          <div className="flex items-center border border-gray-200 rounded-md bg-white min-w-0 flex-1 max-w-[140px]">
+        <div className="mt-3 flex items-center gap-2 min-w-0">
+          <div className="flex items-center border border-gray-200 rounded-md bg-white min-w-0 flex-1 max-w-[220px] sm:max-w-[240px] overflow-hidden">
             <button
               type="button"
               onClick={decrementQuantity}
@@ -171,7 +171,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
               value={quantity}
               onChange={handleQuantityChange}
               onBlur={handleQuantityBlur}
-              className="h-9 w-12 min-w-0 border-0 text-center text-sm font-medium px-1 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="h-10 min-w-[60px] w-16 sm:min-w-[70px] sm:w-20 max-w-[5.5rem] shrink-0 border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               aria-label="Cantidad"
             />
 

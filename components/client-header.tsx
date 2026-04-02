@@ -78,7 +78,7 @@ export function ClientHeader({
             >
               <ShoppingCart className="w-5 h-5 text-gray-700" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#E30613] text-white text-xs font-bold flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 rounded-full bg-[#E30613] text-white text-xs font-bold flex items-center justify-center leading-none">
                   {cartItemCount > 99 ? "99+" : cartItemCount}
                 </span>
               )}

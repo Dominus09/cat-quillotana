@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,12 @@ export default function CatalogPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+
+  const clearCatalogFilters = useCallback(() => {
+    setSelectedCategory(null)
+    setStockFilter("all")
+    setApiInStockOnly(false)
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -188,6 +194,7 @@ export default function CatalogPage() {
               onApiInStockOnlyChange={setApiInStockOnly}
               isOpen={filtersOpen}
               onClose={() => setFiltersOpen(false)}
+              isMobileDrawer={false}
             />
           </div>
 
@@ -198,10 +205,10 @@ export default function CatalogPage() {
               <Button
                 variant="outline"
                 onClick={() => setFiltersOpen(true)}
-                className="w-full justify-center"
+                className="w-full justify-center h-11 font-medium"
               >
                 <Filter className="w-4 h-4 mr-2" />
-                Filtros
+                Filtrar
               </Button>
             </div>
 
@@ -258,19 +265,15 @@ export default function CatalogPage() {
         <FiltersSidebar
           categories={categories}
           selectedCategory={selectedCategory}
-          onCategoryChange={(cat) => {
-            setSelectedCategory(cat)
-            setFiltersOpen(false)
-          }}
+          onCategoryChange={setSelectedCategory}
           stockFilter={stockFilter}
-          onStockFilterChange={(filter) => {
-            setStockFilter(filter)
-            setFiltersOpen(false)
-          }}
+          onStockFilterChange={setStockFilter}
           apiInStockOnly={apiInStockOnly}
           onApiInStockOnlyChange={setApiInStockOnly}
           isOpen={filtersOpen}
           onClose={() => setFiltersOpen(false)}
+          isMobileDrawer
+          onClearFilters={clearCatalogFilters}
         />
       </div>
 

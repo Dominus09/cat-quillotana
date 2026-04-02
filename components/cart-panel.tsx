@@ -1,7 +1,16 @@
 "use client"
 
+import { useState, type ChangeEvent } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { X, Plus, Minus, Trash2, ShoppingBag } from "lucide-react"
 import type { CartItem } from "@/types/catalog"
 
@@ -14,6 +23,92 @@ interface CartPanelProps {
   onClearCart: () => void
 }
 
+/** Estructura lista para envío futuro (WhatsApp, API, etc.) */
+export function buildOrderSummary(items: CartItem[]): {
+  lines: string[]
+  total: number
+  text: string
+} {
+  const lines = items.map((i) => `${i.product.name} x ${i.quantity}`)
+  const total = items.reduce(
+    (s, i) => s + i.product.price * i.quantity,
+    0
+  )
+  const text = `${lines.join("\n")}\n\nTotal: $${total.toLocaleString("es-CL")}`
+  return { lines, total, text }
+}
+
+function CartQuantityControl({
+  productId,
+  quantity,
+  stock,
+  disabled,
+  onUpdateQuantity,
+}: {
+  productId: number
+  quantity: number
+  stock: number
+  disabled: boolean
+  onUpdateQuantity: (productId: number, quantity: number) => void
+}) {
+  const clamp = (n: number) => {
+    if (stock <= 0) return 1
+    if (!Number.isFinite(n) || n < 1) return 1
+    return Math.min(n, stock)
+  }
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value
+    if (v === "") {
+      onUpdateQuantity(productId, 1)
+      return
+    }
+    const n = Number(v)
+    if (!Number.isInteger(n)) return
+    onUpdateQuantity(productId, clamp(n))
+  }
+
+  const handleBlur = () => {
+    onUpdateQuantity(productId, clamp(quantity))
+  }
+
+  const maxQty = Math.max(1, stock)
+
+  return (
+    <div className="flex items-center border border-border rounded-md bg-card overflow-hidden max-w-[200px]">
+      <button
+        type="button"
+        onClick={() => onUpdateQuantity(productId, clamp(quantity - 1))}
+        disabled={disabled || quantity <= 1}
+        className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 shrink-0"
+        aria-label="Disminuir cantidad"
+      >
+        <Minus className="w-3 h-3" />
+      </button>
+      <Input
+        type="number"
+        min={1}
+        max={maxQty}
+        disabled={disabled}
+        value={quantity}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className="h-9 min-w-[60px] w-16 sm:min-w-[70px] sm:w-20 max-w-[5.5rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        aria-label="Cantidad en carrito"
+      />
+      <button
+        type="button"
+        onClick={() => onUpdateQuantity(productId, clamp(quantity + 1))}
+        disabled={disabled || quantity >= stock}
+        className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 shrink-0"
+        aria-label="Aumentar cantidad"
+      >
+        <Plus className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
+
 export function CartPanel({
   isOpen,
   onClose,
@@ -22,12 +117,21 @@ export function CartPanel({
   onRemoveItem,
   onClearCart,
 }: CartPanelProps) {
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false)
+  const [orderPreview, setOrderPreview] = useState("")
+
   const total = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
   )
 
   const itemCount = items.reduce((count, item) => count + item.quantity, 0)
+
+  const handleContinueOrder = () => {
+    const { text } = buildOrderSummary(items)
+    setOrderPreview(text)
+    setOrderDialogOpen(true)
+  }
 
   return (
     <>
@@ -40,35 +144,36 @@ export function CartPanel({
 
       <div
         className={`
-          fixed top-0 right-0 h-full w-full max-w-md bg-card border-l border-border z-50 transform transition-transform duration-300
+          fixed top-0 right-0 h-full w-full max-w-md bg-card border-l border-border z-50 transform transition-transform duration-300 flex flex-col
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-primary" />
-              <h2 className="font-semibold text-foreground">
-                Carrito ({itemCount} {itemCount === 1 ? "item" : "items"})
-              </h2>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-5 h-5" />
-            </Button>
+        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <ShoppingBag className="w-5 h-5 text-primary shrink-0" />
+            <h2 className="font-semibold text-foreground truncate">
+              Carrito ({itemCount} {itemCount === 1 ? "unidad" : "unidades"})
+            </h2>
           </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <ShoppingBag className="w-16 h-16 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">Tu carrito está vacío</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Agrega productos desde el catálogo
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {items.map((item) => (
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <ShoppingBag className="w-16 h-16 text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">Tu carrito está vacío</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Agrega productos desde el catálogo
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {items.map((item) => {
+                const subtotal = item.product.price * item.quantity
+                return (
                   <div
                     key={item.product.id}
                     className="flex gap-3 p-3 bg-muted rounded-lg"
@@ -83,88 +188,108 @@ export function CartPanel({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.src = "/icon.svg"
-                          target.className = "w-full h-full object-contain opacity-40 p-2"
+                          target.className =
+                            "w-full h-full object-contain opacity-40 p-2"
                         }}
                       />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-foreground text-sm line-clamp-2">
-                        {item.product.name}
-                      </h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
-                        {item.product.type}
-                      </p>
-                      <p className="text-sm font-semibold text-primary mt-1">
-                        ${item.product.price.toLocaleString("es-CL")} c/u
-                      </p>
-
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center border border-border rounded-md bg-card">
-                          <button
-                            onClick={() =>
-                              onUpdateQuantity(item.product.id, item.quantity - 1)
-                            }
-                            className="p-1 text-muted-foreground hover:text-foreground"
-                            aria-label="Disminuir cantidad"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-8 text-center text-sm font-medium">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              onUpdateQuantity(item.product.id, item.quantity + 1)
-                            }
-                            disabled={item.quantity >= item.product.stock}
-                            className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
-                            aria-label="Aumentar cantidad"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                    <div className="flex-1 min-w-0 flex flex-col gap-1">
+                      <div className="flex justify-between gap-2 items-start">
+                        <div className="min-w-0">
+                          <h4 className="font-medium text-foreground text-sm leading-snug line-clamp-2">
+                            {item.product.name}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground uppercase tracking-wide line-clamp-1 mt-0.5">
+                            {item.product.type}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Precio unit.:{" "}
+                            <span className="font-semibold text-foreground">
+                              ${item.product.price.toLocaleString("es-CL")}
+                            </span>
+                          </p>
                         </div>
-
                         <button
+                          type="button"
                           onClick={() => onRemoveItem(item.product.id)}
-                          className="p-1 text-muted-foreground hover:text-destructive"
+                          className="p-1.5 text-muted-foreground hover:text-destructive shrink-0 rounded-md hover:bg-background"
                           aria-label="Eliminar producto"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
+
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <CartQuantityControl
+                          productId={item.product.id}
+                          quantity={item.quantity}
+                          stock={item.product.stock}
+                          disabled={item.product.stock <= 0}
+                          onUpdateQuantity={onUpdateQuantity}
+                        />
+                      </div>
+
+                      <p className="text-sm font-semibold text-primary text-right">
+                        Subtotal: ${subtotal.toLocaleString("es-CL")}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {items.length > 0 && (
-            <div className="p-4 border-t border-border space-y-4">
-              <div className="flex items-center justify-between text-lg font-semibold">
-                <span className="text-foreground">Total:</span>
-                <span className="text-primary">
-                  ${total.toLocaleString("es-CL")}
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-[#c90510]">
-                  Finalizar pedido
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={onClearCart}
-                >
-                  Vaciar carrito
-                </Button>
-              </div>
+                )
+              })}
             </div>
           )}
         </div>
+
+        {items.length > 0 && (
+          <div className="shrink-0 border-t border-border p-4 space-y-4 bg-card">
+            <div className="flex items-center justify-between text-lg font-bold">
+              <span className="text-foreground">Total</span>
+              <span className="text-primary">
+                ${total.toLocaleString("es-CL")}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                className="w-full h-11 font-semibold bg-primary text-primary-foreground hover:bg-[#c90510]"
+                onClick={handleContinueOrder}
+              >
+                Continuar pedido
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11"
+                onClick={onClearCart}
+              >
+                Vaciar carrito
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
+      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Resumen del pedido</DialogTitle>
+          </DialogHeader>
+          <pre className="text-sm whitespace-pre-wrap font-sans bg-muted rounded-md p-3 max-h-[50vh] overflow-y-auto border border-border">
+            {orderPreview}
+          </pre>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOrderDialogOpen(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
