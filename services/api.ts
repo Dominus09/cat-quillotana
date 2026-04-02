@@ -1,6 +1,8 @@
 import type { Product } from "@/types/catalog"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.quillotana.cl"
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "https://api.quillotana.cl"
+).replace(/\/+$/, "")
 
 export interface LoginClientResponse {
   id: number
