@@ -33,9 +33,7 @@ export function setCart(cart: CartItem[]): void {
 
 export function addToCart(product: Product, quantity: number = 1): CartItem[] {
   const cart = getCart()
-  const existingIndex = cart.findIndex(
-    (item) => item.product.variant_id === product.variant_id
-  )
+  const existingIndex = cart.findIndex((item) => item.product.id === product.id)
 
   if (existingIndex >= 0) {
     cart[existingIndex].quantity += quantity
@@ -47,9 +45,9 @@ export function addToCart(product: Product, quantity: number = 1): CartItem[] {
   return cart
 }
 
-export function updateCartItem(variantId: number, quantity: number): CartItem[] {
+export function updateCartItem(productId: number, quantity: number): CartItem[] {
   const cart = getCart()
-  const index = cart.findIndex((item) => item.product.variant_id === variantId)
+  const index = cart.findIndex((item) => item.product.id === productId)
 
   if (index >= 0) {
     if (quantity <= 0) {
@@ -63,8 +61,8 @@ export function updateCartItem(variantId: number, quantity: number): CartItem[] 
   return cart
 }
 
-export function removeFromCart(variantId: number): CartItem[] {
-  const cart = getCart().filter((item) => item.product.variant_id !== variantId)
+export function removeFromCart(productId: number): CartItem[] {
+  const cart = getCart().filter((item) => item.product.id !== productId)
   setCart(cart)
   return cart
 }
@@ -73,11 +71,11 @@ export function clearCart(): void {
   setCart([])
 }
 
-export function getCartTotal(cart: CartItem[], priceList: string): number {
-  return cart.reduce((total, item) => {
-    const price = item.product.prices[priceList] || item.product.default_price
-    return total + price * item.quantity
-  }, 0)
+export function getCartTotal(cart: CartItem[]): number {
+  return cart.reduce(
+    (total, item) => total + item.product.price * item.quantity,
+    0
+  )
 }
 
 export function getCartItemCount(cart: CartItem[]): number {

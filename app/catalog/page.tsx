@@ -50,7 +50,7 @@ export default function CatalogPage() {
 
   // Extract unique categories
   const categories = useMemo(() => {
-    const types = new Set(products.map((p) => p.product_type))
+    const types = new Set(products.map((p) => p.type))
     return Array.from(types).sort()
   }, [products])
 
@@ -63,15 +63,14 @@ export default function CatalogPage() {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
         (p) =>
-          p.product.toLowerCase().includes(query) ||
-          p.variant.toLowerCase().includes(query) ||
-          p.barcode.includes(query)
+          p.name.toLowerCase().includes(query) ||
+          p.type.toLowerCase().includes(query)
       )
     }
 
     // Category filter
     if (selectedCategory) {
-      filtered = filtered.filter((p) => p.product_type === selectedCategory)
+      filtered = filtered.filter((p) => p.type === selectedCategory)
     }
 
     // Stock filter
@@ -89,13 +88,13 @@ export default function CatalogPage() {
     setCart(updatedCart)
   }
 
-  const handleUpdateQuantity = (variantId: number, quantity: number) => {
-    const updatedCart = updateCartItem(variantId, quantity)
+  const handleUpdateQuantity = (productId: number, quantity: number) => {
+    const updatedCart = updateCartItem(productId, quantity)
     setCart(updatedCart)
   }
 
-  const handleRemoveItem = (variantId: number) => {
-    const updatedCart = removeFromCart(variantId)
+  const handleRemoveItem = (productId: number) => {
+    const updatedCart = removeFromCart(productId)
     setCart(updatedCart)
   }
 
@@ -214,9 +213,8 @@ export default function CatalogPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredProducts.map((product) => (
                   <ProductCard
-                    key={product.variant_id}
+                    key={product.id}
                     product={product}
-                    priceList={session.price_list}
                     onAddToCart={handleAddToCart}
                   />
                 ))}
@@ -277,7 +275,6 @@ export default function CatalogPage() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         items={cart}
-        priceList={session.price_list}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}

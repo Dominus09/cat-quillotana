@@ -9,6 +9,18 @@ import { setSession } from "@/lib/session"
 import { loginClient } from "@/services/api"
 import type { ClientSession } from "@/types/catalog"
 
+function validateRutForSubmit(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return "Por favor ingresa tu RUT"
+  if (trimmed.includes(".")) {
+    return "No uses puntos en el RUT. Ejemplo: 12345678-9"
+  }
+  if (!trimmed.includes("-")) {
+    return "El RUT debe incluir el guion verificador (ej: 12345678-9)"
+  }
+  return null
+}
+
 export default function LoginPage() {
   const [rut, setRut] = useState("")
   const [loading, setLoading] = useState(false)
@@ -23,6 +35,15 @@ export default function LoginPage() {
     const trimmed = rut.trim()
     const trimmedLower = trimmed.toLowerCase()
 
+    if (trimmedLower !== "test") {
+      const rutErr = validateRutForSubmit(trimmed)
+      if (rutErr) {
+        setError(rutErr)
+        setLoading(false)
+        return
+      }
+    }
+
     if (trimmedLower === "test") {
       const testSession: ClientSession = {
         client_id: 0,
@@ -36,12 +57,6 @@ export default function LoginPage() {
       setSession(testSession)
       setLoading(false)
       router.push("/catalog")
-      return
-    }
-
-    if (!trimmed) {
-      setError("Por favor ingresa tu RUT")
-      setLoading(false)
       return
     }
 
@@ -112,7 +127,7 @@ export default function LoginPage() {
                 <Input
                   id="rut"
                   type="text"
-                  placeholder="12.345.678-9"
+                  placeholder="12345678-9"
                   value={rut}
                   onChange={(e) => setRut(e.target.value)}
                   className="h-12 text-base bg-background border-border focus:border-primary focus:ring-primary"

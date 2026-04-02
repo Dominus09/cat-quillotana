@@ -4,6 +4,8 @@ const API_URL = (
   process.env.NEXT_PUBLIC_API_URL || "https://api.quillotana.cl"
 ).replace(/\/+$/, "")
 
+const IMAGE_FALLBACK = "/icon.svg"
+
 export interface LoginClientResponse {
   id: number
   name: string
@@ -14,9 +16,24 @@ export interface LoginClientResponse {
 export interface ApiCatalogItem {
   id: number
   name: string
-  barcode: string
-  price: number
+  type: string
+  barcode: string | null
   stock: number
+  image: string | null
+  price: number | null
+}
+
+function parseLoginErrorMessage(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null
+  const o = body as Record<string, unknown>
+  if (typeof o.detail === "string") return o.detail
+  if (Array.isArray(o.detail) && o.detail[0] && typeof o.detail[0] === "object") {
+    const first = o.detail[0] as Record<string, unknown>
+    if (typeof first.msg === "string") return first.msg
+  }
+  if (typeof o.message === "string") return o.message
+  if (typeof o.error === "string") return o.error
+  return null
 }
 
 export async function loginClient(rut: string): Promise<LoginClientResponse> {
@@ -30,8 +47,8 @@ export async function loginClient(rut: string): Promise<LoginClientResponse> {
     let message = "No pudimos validar tu RUT. Verifica e intenta de nuevo."
     try {
       const body = await res.json()
-      if (typeof body?.message === "string") message = body.message
-      else if (typeof body?.error === "string") message = body.error
+      const parsed = parseLoginErrorMessage(body)
+      if (parsed) message = parsed
     } catch {
       // keep default message
     }
@@ -41,28 +58,31 @@ export async function loginClient(rut: string): Promise<LoginClientResponse> {
   return res.json()
 }
 
-export function mapApiToProduct(item: ApiCatalogItem, price_list: string): Product {
+/** Relativo → base API; absoluta → tal cual. */
+function resolveImageUrl(imageFromApi: string | null | undefined): string {
+  const t = imageFromApi?.trim()
+  if (!t) return IMAGE_FALLBACK
+  if (t.startsWith("http://") || t.startsWith("https://")) return t
+  const path = t.startsWith("/") ? t : `/${t}`
+  return `${API_URL}${path}`
+}
+
+export function mapApiToProduct(item: ApiCatalogItem): Product {
   return {
-    variant_id: item.id,
-    product: item.name,
-    variant: "",
-    product_type: "General",
-    barcode: item.barcode,
-    prices: {
-      [price_list]: item.price,
-    },
-    default_price: item.price,
+    id: item.id,
+    name: (item.name ?? "").trim() || "Sin nombre",
+    type: (item.type ?? "").trim() || "Sin categoría",
+    image: resolveImageUrl(item.image),
+    price: item.price ?? 0,
     stock: item.stock,
-    image: "/placeholder.png",
   }
 }
 
 export async function getCatalog(
   price_list: string,
-  rut: string,
   in_stock?: boolean
 ): Promise<Product[]> {
-  const params = new URLSearchParams({ price_list, rut })
+  const params = new URLSearchParams({ price_list })
   if (in_stock) {
     params.set("in_stock", "true")
   }
@@ -74,5 +94,5 @@ export async function getCatalog(
   }
 
   const raw: ApiCatalogItem[] = await res.json()
-  return raw.map((item) => mapApiToProduct(item, price_list))
+  return raw.map(mapApiToProduct)
 }

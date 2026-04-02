@@ -1,13 +1,10 @@
 export interface Product {
-  variant_id: number
-  product_type: string
-  product: string
-  variant: string
-  barcode: string
-  stock: number
-  prices: Record<string, number>
-  default_price: number
+  id: number
+  name: string
+  type: string
   image: string
+  price: number
+  stock: number
 }
 
 export interface ClientSession {

@@ -8,7 +8,6 @@ import type { Product } from "@/types/catalog"
 
 interface ProductCardProps {
   product: Product
-  priceList: string
   onAddToCart: (product: Product, quantity: number) => void
 }
 
@@ -21,11 +20,10 @@ function getStockStatus(stock: number) {
   return { label: "Disponible", bgColor: "bg-green-100", textColor: "text-green-700" }
 }
 
-export function ProductCard({ product, priceList, onAddToCart }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
   const [imageError, setImageError] = useState(false)
-  
-  const price = product.prices?.[priceList] ?? product.default_price ?? product.price ?? 0
+
   const stockStatus = getStockStatus(product.stock)
   const isOutOfStock = product.stock === 0
 
@@ -50,22 +48,20 @@ export function ProductCard({ product, priceList, onAddToCart }: ProductCardProp
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
-      
-      {/* Imagen */}
       <div className="relative h-40 bg-gray-100 border-b border-gray-100">
         {imageError ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-4">
             <Image
-              src="/placeholder.png"
-              alt="sin imagen"
+              src="/icon.svg"
+              alt=""
               width={60}
               height={60}
-              className="opacity-30"
+              className="opacity-40"
             />
           </div>
         ) : (
           <Image
-            src={product.image || "/placeholder.png"}
+            src={product.image || "/icon.svg"}
             alt={product.name}
             fill
             className="object-contain p-3"
@@ -75,35 +71,32 @@ export function ProductCard({ product, priceList, onAddToCart }: ProductCardProp
           />
         )}
 
-        {/* Stock */}
         <div className="absolute top-2 right-2">
-          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.bgColor} ${stockStatus.textColor}`}>
+          <span
+            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.bgColor} ${stockStatus.textColor}`}
+          >
             {stockStatus.label}
           </span>
         </div>
       </div>
 
-      {/* Info */}
       <div className="p-4 flex flex-col flex-1">
-        
-        {/* Tipo */}
-        <p className="text-xs uppercase text-gray-500 tracking-wide">
-          {product.type || "Sin categoría"}
+        <p className="text-xs uppercase text-gray-500 tracking-wide line-clamp-2">
+          {product.type}
         </p>
 
-        {/* Nombre */}
         <h3 className="font-semibold text-gray-900 text-sm mt-1 line-clamp-2">
           {product.name}
         </h3>
 
-        {/* Precio */}
+        <p className="text-xs text-gray-600 mt-1">Stock: {product.stock}</p>
+
         <div className="mt-auto pt-3">
           <p className="text-lg font-bold text-red-600">
-            ${price.toLocaleString("es-CL")}
+            ${product.price.toLocaleString("es-CL")}
           </p>
         </div>
 
-        {/* Cantidad + botón */}
         <div className="mt-3 flex items-center gap-2">
           <div className="flex items-center border border-gray-200 rounded-md bg-white">
             <button
@@ -128,7 +121,7 @@ export function ProductCard({ product, priceList, onAddToCart }: ProductCardProp
               <Plus className="w-3 h-3" />
             </button>
           </div>
-          
+
           <Button
             onClick={handleAdd}
             disabled={isOutOfStock}
