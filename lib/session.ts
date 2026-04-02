@@ -14,6 +14,12 @@ export function setSession(session: ClientSession): void {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
 }
 
+export function updateSessionPriceList(price_list: string): void {
+  const s = getSession()
+  if (!s) return
+  setSession({ ...s, price_list })
+}
+
 export function clearSession(): void {
   if (typeof window === "undefined") return
   sessionStorage.removeItem(SESSION_KEY)

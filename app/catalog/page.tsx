@@ -44,6 +44,10 @@ export default function CatalogPage() {
       router.push("/")
       return
     }
+    if (!clientSession.price_list?.trim()) {
+      router.push("/select-price-list")
+      return
+    }
     setSession(clientSession)
     setCart(getCart())
   }, [router])

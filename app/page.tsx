@@ -48,7 +48,7 @@ export default function LoginPage() {
       const testSession: ClientSession = {
         client_id: 0,
         name: "Cliente Demo",
-        price_list: "factura",
+        price_list: "",
         rut: "test",
         city: "",
         is_melinka: false,
@@ -56,22 +56,35 @@ export default function LoginPage() {
       }
       setSession(testSession)
       setLoading(false)
-      router.push("/catalog")
+      router.push("/select-price-list")
       return
     }
 
     try {
       const data = await loginClient(trimmed)
-      const session: ClientSession = {
-        client_id: data.id,
-        name: data.name,
-        rut: trimmed,
-        city: data.city,
-        is_melinka: data.is_melinka,
-        price_list: data.is_melinka ? "melinka" : "factura",
+      if (data.is_melinka) {
+        const session: ClientSession = {
+          client_id: data.id,
+          name: data.name,
+          rut: trimmed,
+          city: data.city,
+          is_melinka: true,
+          price_list: "melinka",
+        }
+        setSession(session)
+        router.push("/catalog")
+      } else {
+        const session: ClientSession = {
+          client_id: data.id,
+          name: data.name,
+          rut: trimmed,
+          city: data.city,
+          is_melinka: false,
+          price_list: "",
+        }
+        setSession(session)
+        router.push("/select-price-list")
       }
-      setSession(session)
-      router.push("/catalog")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión")
     } finally {
