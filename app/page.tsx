@@ -48,7 +48,6 @@ export default function LoginPage() {
       const testSession: ClientSession = {
         client_id: 0,
         name: "Cliente Demo",
-        price_list: "",
         rut: "test",
         city: "",
         is_melinka: false,
@@ -80,7 +79,6 @@ export default function LoginPage() {
           rut: trimmed,
           city: data.city,
           is_melinka: false,
-          price_list: "",
         }
         setSession(session)
         router.push("/select-price-list")
