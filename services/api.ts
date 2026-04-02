@@ -57,9 +57,10 @@ export function mapApiToProduct(item: ApiCatalogItem, price_list: string): Produ
 
 export async function getCatalog(
   price_list: string,
+  rut: string,
   in_stock?: boolean
 ): Promise<Product[]> {
-  const params = new URLSearchParams({ price_list })
+  const params = new URLSearchParams({ price_list, rut })
   if (in_stock) {
     params.set("in_stock", "true")
   }
