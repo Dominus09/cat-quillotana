@@ -15,7 +15,9 @@ export interface ClientSession {
   name: string
   price_list: string
   rut: string
-  isTestMode: boolean
+  city: string
+  is_melinka: boolean
+  isTestMode?: boolean
 }
 
 export interface CartItem {

@@ -25,8 +25,9 @@ import type { ClientSession, CartItem, Product } from "@/types/catalog"
 
 export default function CatalogPage() {
   const router = useRouter()
-  const { products, isLoading, error } = useCatalog()
-  
+  const [apiInStockOnly, setApiInStockOnly] = useState(false)
+  const { products, isLoading, error } = useCatalog(apiInStockOnly)
+
   const [session, setSession] = useState<ClientSession | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -180,6 +181,8 @@ export default function CatalogPage() {
               onCategoryChange={setSelectedCategory}
               stockFilter={stockFilter}
               onStockFilterChange={setStockFilter}
+              apiInStockOnly={apiInStockOnly}
+              onApiInStockOnlyChange={setApiInStockOnly}
               isOpen={filtersOpen}
               onClose={() => setFiltersOpen(false)}
             />
@@ -236,6 +239,7 @@ export default function CatalogPage() {
                     setSearchQuery("")
                     setSelectedCategory(null)
                     setStockFilter("all")
+                    setApiInStockOnly(false)
                   }}
                   className="text-primary mt-2"
                 >
@@ -261,6 +265,8 @@ export default function CatalogPage() {
             setStockFilter(filter)
             setFiltersOpen(false)
           }}
+          apiInStockOnly={apiInStockOnly}
+          onApiInStockOnlyChange={setApiInStockOnly}
           isOpen={filtersOpen}
           onClose={() => setFiltersOpen(false)}
         />

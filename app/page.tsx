@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { setSession } from "@/lib/session"
+import { loginClient } from "@/services/api"
 import type { ClientSession } from "@/types/catalog"
 
 export default function LoginPage() {
@@ -19,37 +20,48 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
 
-    const trimmedRut = rut.trim().toLowerCase()
+    const trimmed = rut.trim()
+    const trimmedLower = trimmed.toLowerCase()
 
-    if (trimmedRut === "test") {
+    if (trimmedLower === "test") {
       const testSession: ClientSession = {
         client_id: 0,
         name: "Cliente Demo",
-        price_list: "13",
+        price_list: "factura",
         rut: "test",
+        city: "",
+        is_melinka: false,
         isTestMode: true,
       }
       setSession(testSession)
+      setLoading(false)
       router.push("/catalog")
       return
     }
 
-    if (!trimmedRut) {
+    if (!trimmed) {
       setError("Por favor ingresa tu RUT")
       setLoading(false)
       return
     }
 
-    // For now, create a session with the RUT (real validation would be via API)
-    const session: ClientSession = {
-      client_id: 1,
-      name: "Cliente",
-      price_list: "13",
-      rut: trimmedRut,
-      isTestMode: false,
+    try {
+      const data = await loginClient(trimmed)
+      const session: ClientSession = {
+        client_id: data.id,
+        name: data.name,
+        rut: trimmed,
+        city: data.city,
+        is_melinka: data.is_melinka,
+        price_list: data.is_melinka ? "melinka" : "factura",
+      }
+      setSession(session)
+      router.push("/catalog")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión")
+    } finally {
+      setLoading(false)
     }
-    setSession(session)
-    router.push("/catalog")
   }
 
   return (

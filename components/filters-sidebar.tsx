@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { X, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -12,6 +14,8 @@ interface FiltersSidebarProps {
   onCategoryChange: (category: string | null) => void
   stockFilter: "all" | "available" | "low"
   onStockFilterChange: (filter: "all" | "available" | "low") => void
+  apiInStockOnly: boolean
+  onApiInStockOnlyChange: (value: boolean) => void
   isOpen: boolean
   onClose: () => void
 }
@@ -22,6 +26,8 @@ export function FiltersSidebar({
   onCategoryChange,
   stockFilter,
   onStockFilterChange,
+  apiInStockOnly,
+  onApiInStockOnlyChange,
   isOpen,
   onClose,
 }: FiltersSidebarProps) {
@@ -109,6 +115,24 @@ export function FiltersSidebar({
             <h3 className="text-sm font-semibold text-gray-700 mb-3">
               Disponibilidad
             </h3>
+
+            <div className="flex items-start gap-2 py-2 px-1 mb-2 rounded-md hover:bg-gray-50">
+              <Checkbox
+                id="catalog-in-stock-api"
+                checked={apiInStockOnly}
+                onCheckedChange={(checked) =>
+                  onApiInStockOnlyChange(checked === true)
+                }
+                className="mt-0.5"
+              />
+              <Label
+                htmlFor="catalog-in-stock-api"
+                className="text-sm text-gray-700 font-normal leading-snug cursor-pointer"
+              >
+                Solo productos con stock (catálogo)
+              </Label>
+            </div>
+
             <div className="space-y-1">
               <button
                 onClick={() => onStockFilterChange("all")}

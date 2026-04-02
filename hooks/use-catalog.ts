@@ -1,20 +1,25 @@
 import useSWR from "swr"
 import type { Product } from "@/types/catalog"
+import { getCatalog } from "@/services/api"
+import { getSession } from "@/lib/session"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.quillotana.cl"
+type CatalogKey = readonly ["catalog", string, boolean]
 
-async function fetchCatalog(): Promise<Product[]> {
-  const res = await fetch(`${API_URL}/api/catalog`)
-  if (!res.ok) {
-    throw new Error("Error loading catalog")
-  }
-  return res.json()
+async function catalogFetcher([, price_list, inStockOnly]: CatalogKey): Promise<
+  Product[]
+> {
+  return getCatalog(price_list, inStockOnly ? true : undefined)
 }
 
-export function useCatalog() {
+export function useCatalog(inStockOnly: boolean) {
+  const session = typeof window !== "undefined" ? getSession() : null
+  const key: CatalogKey | null = session
+    ? (["catalog", session.price_list, inStockOnly] as const)
+    : null
+
   const { data, error, isLoading, mutate } = useSWR<Product[]>(
-    "catalog",
-    fetchCatalog,
+    key,
+    catalogFetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 60000,
@@ -23,7 +28,7 @@ export function useCatalog() {
 
   return {
     products: data || [],
-    isLoading,
+    isLoading: key !== null ? isLoading : false,
     error,
     refresh: mutate,
   }
