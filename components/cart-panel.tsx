@@ -1,16 +1,10 @@
 "use client"
 
-import { useState, type ChangeEvent } from "react"
+import { type ChangeEvent } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import { X, Plus, Minus, Trash2, ShoppingBag } from "lucide-react"
 import type { CartItem } from "@/types/catalog"
 
@@ -117,8 +111,7 @@ export function CartPanel({
   onRemoveItem,
   onClearCart,
 }: CartPanelProps) {
-  const [orderDialogOpen, setOrderDialogOpen] = useState(false)
-  const [orderPreview, setOrderPreview] = useState("")
+  const router = useRouter()
 
   const total = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -128,9 +121,8 @@ export function CartPanel({
   const itemCount = items.reduce((count, item) => count + item.quantity, 0)
 
   const handleContinueOrder = () => {
-    const { text } = buildOrderSummary(items)
-    setOrderPreview(text)
-    setOrderDialogOpen(true)
+    onClose()
+    router.push("/checkout")
   }
 
   return (
@@ -270,26 +262,6 @@ export function CartPanel({
           </div>
         )}
       </div>
-
-      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Resumen del pedido</DialogTitle>
-          </DialogHeader>
-          <pre className="text-sm whitespace-pre-wrap font-sans bg-muted rounded-md p-3 max-h-[50vh] overflow-y-auto border border-border">
-            {orderPreview}
-          </pre>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOrderDialogOpen(false)}
-            >
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

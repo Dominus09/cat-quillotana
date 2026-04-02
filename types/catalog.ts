@@ -5,6 +5,8 @@ export interface Product {
   image: string
   price: number
   stock: number
+  /** Desde API catálogo; opcional en ítems antiguos del carrito. */
+  barcode?: string
 }
 
 export interface ClientSession {

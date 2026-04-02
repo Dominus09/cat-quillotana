@@ -75,6 +75,7 @@ export function mapApiToProduct(item: ApiCatalogItem): Product {
     image: resolveImageUrl(item.image),
     price: item.price ?? 0,
     stock: item.stock,
+    barcode: (item.barcode ?? "").trim() || undefined,
   }
 }
 
@@ -95,4 +96,62 @@ export async function getCatalog(
 
   const raw: ApiCatalogItem[] = await res.json()
   return raw.map(mapApiToProduct)
+}
+
+export interface CreateOrderClient {
+  id: number
+  name: string
+}
+
+export interface CreateOrderItem {
+  id: number
+  name: string
+  barcode: string
+  quantity: number
+  price: number
+}
+
+export interface CreateOrderPayload {
+  client: CreateOrderClient
+  items: CreateOrderItem[]
+  total: number
+  price_list: string
+  payment_method: string
+  document_type: string
+  contact_name: string
+  contact_phone: string
+  delivery_date: string
+  notes: string
+}
+
+export type CreateOrderResponse = Record<string, unknown> & {
+  id?: number
+  order_id?: number
+  number?: string | number
+}
+
+export async function createOrder(
+  orderData: CreateOrderPayload
+): Promise<CreateOrderResponse> {
+  const res = await fetch(`${API_URL}/orders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(orderData),
+  })
+
+  if (!res.ok) {
+    let message = "Error al crear pedido"
+    try {
+      const body = await res.json()
+      if (typeof body?.detail === "string") message = body.detail
+      else if (typeof body?.message === "string") message = body.message
+    } catch {
+      // keep default message
+    }
+    throw new Error(message)
+  }
+
+  return res.json()
 }
