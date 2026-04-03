@@ -1,14 +1,25 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
+function formatOrderDisplayId(raw: string | null): string | null {
+  if (raw == null || raw.trim() === "") return null
+  const n = Number(raw)
+  if (Number.isFinite(n)) {
+    return String(n).padStart(4, "0")
+  }
+  return String(raw).padStart(4, "0")
+}
+
 function SuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get("id")
+
+  const formattedId = useMemo(() => formatOrderDisplayId(orderId), [orderId])
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
@@ -20,14 +31,13 @@ function SuccessContent() {
           height={90}
           className="object-contain mx-auto"
         />
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h1 className="text-2xl font-bold text-foreground">
             Pedido generado correctamente
           </h1>
-          {orderId ? (
-            <p className="text-lg text-muted-foreground">
-              Número de pedido:{" "}
-              <span className="font-semibold text-foreground">{orderId}</span>
+          {formattedId != null ? (
+            <p className="text-2xl font-bold tracking-tight text-primary">
+              Pedido #{formattedId}
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">

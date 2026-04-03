@@ -101,6 +101,7 @@ export async function getCatalog(
 export interface CreateOrderClient {
   id: number
   name: string
+  rut: string
 }
 
 export interface CreateOrderItem {

@@ -29,8 +29,16 @@ function initialImageSrc(product: Product): string {
   return primary ? primary : PLACEHOLDER_WEBP
 }
 
+type QuantityValue = number | ""
+
+function toNumericQty(q: QuantityValue): number {
+  if (q === "") return NaN
+  return typeof q === "number" ? q : NaN
+}
+
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const [quantity, setQuantity] = useState(1)
+  const [quantity, setQuantity] = useState<QuantityValue>(1)
+  const [qtyError, setQtyError] = useState("")
   const [displaySrc, setDisplaySrc] = useState(() => initialImageSrc(product))
   const [imageBroken, setImageBroken] = useState(false)
 
@@ -40,9 +48,18 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   }, [product.id, product.image])
 
   useEffect(() => {
+    setQuantity(1)
+    setQtyError("")
+  }, [product.id])
+
+  useEffect(() => {
     if (product.stock <= 0) return
-    setQuantity((q: number) => Math.min(Math.max(1, q), product.stock))
-  }, [product.stock, product.id])
+    setQuantity((q) => {
+      if (q === "") return q
+      const n = typeof q === "number" && Number.isFinite(q) ? q : 1
+      return Math.min(Math.max(0, n), product.stock)
+    })
+  }, [product.stock])
 
   const stockStatus = getStockStatus(product.stock)
   const isOutOfStock = product.stock === 0
@@ -61,46 +78,48 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   }
 
   const handleAdd = () => {
-    if (!isOutOfStock) {
-      onAddToCart(product, quantity)
-      setQuantity(1)
+    if (isOutOfStock) return
+    const q = toNumericQty(quantity)
+    if (quantity === "" || !Number.isFinite(q) || q <= 0) {
+      setQtyError("Indica una cantidad mayor a 0.")
+      return
     }
-  }
-
-  const clampQuantity = (n: number) => {
-    if (product.stock <= 0) return 1
-    if (!Number.isFinite(n) || n < 1) return 1
-    return Math.min(n, product.stock)
-  }
-
-  const incrementQuantity = () => {
-    if (!isOutOfStock) {
-      setQuantity((q: number) => clampQuantity(q + 1))
+    if (q > product.stock) {
+      setQtyError(`Máximo ${product.stock} unidades disponibles.`)
+      return
     }
-  }
-
-  const decrementQuantity = () => {
-    if (!isOutOfStock) {
-      setQuantity((q: number) => clampQuantity(q - 1))
-    }
+    setQtyError("")
+    onAddToCart(product, q)
+    setQuantity(1)
   }
 
   const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value
-    if (v === "") {
-      setQuantity(1)
+    setQtyError("")
+    const val = e.target.value
+    if (val === "") {
+      setQuantity("")
       return
     }
-    const n = Number(v)
-    if (!Number.isInteger(n)) return
-    setQuantity(clampQuantity(n))
+    setQuantity(Number(val))
   }
 
-  const handleQuantityBlur = () => {
-    setQuantity((q: number) => clampQuantity(q))
+  const incrementQuantity = () => {
+    if (isOutOfStock) return
+    setQtyError("")
+    const base = quantity === "" ? 0 : quantity
+    const next = base + 1
+    setQuantity(Math.min(next, product.stock))
   }
 
-  const maxQty = Math.max(1, product.stock)
+  const decrementQuantity = () => {
+    if (isOutOfStock) return
+    setQtyError("")
+    const base = quantity === "" ? 0 : quantity
+    setQuantity(Math.max(0, base - 1))
+  }
+
+  const numericForButtons = toNumericQty(quantity)
+  const maxQty = Math.max(0, product.stock)
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
@@ -153,33 +172,38 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         </div>
 
         <div className="mt-3 flex items-center gap-2 min-w-0">
-          <div className="flex items-center border border-gray-200 rounded-md bg-white min-w-0 flex-1 max-w-[220px] sm:max-w-[240px] overflow-hidden">
+          <div className="flex items-stretch border border-gray-200 rounded-md bg-white min-w-0 flex-1 max-w-[220px] sm:max-w-[240px] overflow-hidden">
             <button
               type="button"
               onClick={decrementQuantity}
-              disabled={quantity <= 1 || isOutOfStock}
-              className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              disabled={isOutOfStock || quantity === "" || numericForButtons <= 0}
+              className="flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <Minus className="w-3 h-3" />
             </button>
 
-            <Input
-              type="number"
-              min={1}
-              max={maxQty}
-              disabled={isOutOfStock}
-              value={quantity}
-              onChange={handleQuantityChange}
-              onBlur={handleQuantityBlur}
-              className="h-10 min-w-[60px] w-16 sm:min-w-[70px] sm:w-20 max-w-[5.5rem] shrink-0 border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              aria-label="Cantidad"
-            />
+            <div className="flex flex-1 min-w-0 min-h-10 items-center justify-center self-stretch">
+              <Input
+                type="number"
+                min={0}
+                max={maxQty}
+                disabled={isOutOfStock}
+                value={quantity === "" ? "" : quantity}
+                onChange={handleQuantityChange}
+                className="h-10 w-full min-w-[60px] sm:min-w-[70px] max-w-[5.5rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 rounded-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                aria-label="Cantidad"
+              />
+            </div>
 
             <button
               type="button"
               onClick={incrementQuantity}
-              disabled={quantity >= product.stock || isOutOfStock}
-              className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              disabled={
+                isOutOfStock ||
+                (Number.isFinite(numericForButtons) &&
+                  numericForButtons >= product.stock)
+              }
+              className="flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <Plus className="w-3 h-3" />
             </button>
@@ -195,6 +219,10 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             <span className="hidden sm:inline">Agregar</span>
           </Button>
         </div>
+
+        {qtyError ? (
+          <p className="text-xs text-destructive mt-1.5 text-center">{qtyError}</p>
+        ) : null}
       </div>
     </div>
   )

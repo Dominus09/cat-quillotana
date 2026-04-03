@@ -99,6 +99,7 @@ export default function CheckoutPage() {
       client: {
         id: session.client_id,
         name: session.name,
+        rut: session.rut,
       },
       items: cart.map((item) => ({
         id: item.product.id,
@@ -158,6 +159,23 @@ export default function CheckoutPage() {
           <h1 className="text-xl font-bold text-foreground">Checkout</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Confirma los datos para generar tu pedido
+          </p>
+        </div>
+
+        <div
+          className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 shadow-sm"
+          role="note"
+        >
+          <p className="font-semibold text-amber-900 mb-1.5 flex items-start gap-1.5">
+            <span className="shrink-0" aria-hidden>
+              ⚠️
+            </span>
+            <span>IMPORTANTE:</span>
+          </p>
+          <p className="leading-snug text-[13px] sm:text-sm text-amber-950/95">
+            Los precios mostrados son referenciales. Los precios finales pueden
+            variar según volumen de compra y acuerdos comerciales. Un vendedor
+            enviará la orden de compra definitiva con precios actualizados.
           </p>
         </div>
 
