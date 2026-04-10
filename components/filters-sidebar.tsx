@@ -57,9 +57,9 @@ export function FiltersSidebar({
     <>
       {/* 1. Stock */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-800 mb-3">Stock</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-3">Stock</h3>
 
-        <div className="flex items-start gap-2 py-2 px-1 mb-3 rounded-md hover:bg-gray-50">
+        <div className="flex items-start gap-2 py-2 px-1 mb-3 rounded-md hover:bg-muted/80">
           <Checkbox
             id="catalog-show-without-stock"
             checked={!apiInStockOnly}
@@ -70,7 +70,7 @@ export function FiltersSidebar({
           />
           <Label
             htmlFor="catalog-show-without-stock"
-            className="text-sm text-gray-700 font-normal leading-snug cursor-pointer"
+            className="text-sm text-foreground/90 font-normal leading-snug cursor-pointer"
           >
             Visualizar productos sin stock
           </Label>
@@ -83,23 +83,23 @@ export function FiltersSidebar({
           }
           className="gap-2"
         >
-          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-gray-50">
+          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/80">
             <RadioGroupItem value="all" id="stock-all" />
-            <Label htmlFor="stock-all" className="font-normal cursor-pointer flex-1">
+            <Label htmlFor="stock-all" className="font-normal cursor-pointer flex-1 text-foreground/90">
               Todos
             </Label>
           </div>
-          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-gray-50">
+          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/80">
             <RadioGroupItem value="available" id="stock-avail" />
-            <Label htmlFor="stock-avail" className="font-normal cursor-pointer flex-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+            <Label htmlFor="stock-avail" className="font-normal cursor-pointer flex-1 flex items-center gap-2 text-foreground/90">
+              <span className="w-2 h-2 rounded-full bg-green-500 shrink-0 dark:bg-green-400" />
               Disponibles
             </Label>
           </div>
-          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-gray-50">
+          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/80">
             <RadioGroupItem value="low" id="stock-low" />
-            <Label htmlFor="stock-low" className="font-normal cursor-pointer flex-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
+            <Label htmlFor="stock-low" className="font-normal cursor-pointer flex-1 flex items-center gap-2 text-foreground/90">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 shrink-0 dark:bg-yellow-400" />
               Últimas unidades
             </Label>
           </div>
@@ -113,30 +113,30 @@ export function FiltersSidebar({
         defaultValue="categories"
         className="border-0"
       >
-        <AccordionItem value="categories" className="border-gray-200">
-          <AccordionTrigger className="py-3 text-sm font-semibold text-gray-800 hover:no-underline">
+        <AccordionItem value="categories" className="border-border">
+          <AccordionTrigger className="py-3 text-sm font-semibold text-foreground hover:no-underline">
             Categorías
           </AccordionTrigger>
           <AccordionContent>
             <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Buscar categoría"
                 value={categorySearch}
                 onChange={(e) => setCategorySearch(e.target.value)}
-                className="pl-9 h-9 text-sm bg-gray-50 border-gray-200"
+                className="pl-9 h-9 text-sm bg-background border-border dark:bg-zinc-900/60"
               />
             </div>
-            <div className="max-h-64 overflow-y-auto rounded-md border border-gray-100 bg-gray-50/50 pr-1 space-y-0.5">
+            <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-muted/25 pr-1 space-y-0.5 dark:bg-zinc-900/35 dark:border-zinc-700/50">
               <button
                 type="button"
                 onClick={() => onCategoryChange(null)}
                 className={cn(
                   "w-full text-left py-2 px-3 rounded-md text-sm transition-colors",
                   selectedCategory === null
-                    ? "bg-blue-50 text-blue-700 font-semibold"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-primary/12 text-primary font-semibold ring-1 ring-inset ring-primary/25 dark:bg-primary/18 dark:text-primary dark:ring-primary/35"
+                    : "text-muted-foreground hover:bg-muted/90 hover:text-foreground"
                 )}
               >
                 Todas las categorías
@@ -149,8 +149,8 @@ export function FiltersSidebar({
                   className={cn(
                     "w-full text-left py-2 px-3 rounded-md text-sm transition-colors",
                     selectedCategory === category
-                      ? "bg-blue-50 text-blue-700 font-semibold"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-primary/12 text-primary font-semibold ring-1 ring-inset ring-primary/25 dark:bg-primary/18 dark:text-primary dark:ring-primary/35"
+                      : "text-muted-foreground hover:bg-muted/90 hover:text-foreground"
                   )}
                 >
                   {category}
@@ -167,7 +167,7 @@ export function FiltersSidebar({
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden dark:bg-black/70"
           onClick={onClose}
           aria-hidden
         />
