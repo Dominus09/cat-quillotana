@@ -24,6 +24,7 @@ import {
 } from "@/lib/session"
 import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
 import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
+import { filterProductsForPriceList } from "@/lib/catalog-filters"
 import {
   RUT_MISSING_PHOTO_EXPORT_TOOL,
   rutEqualsNormalized,
@@ -44,13 +45,18 @@ export default function CatalogPage() {
 
   const { products, isLoading, error } = useCatalog(apiInStockOnly)
 
+  const productsForList = useMemo(
+    () => filterProductsForPriceList(products, session?.price_list),
+    [products, session?.price_list]
+  )
+
   const showMissingPhotoExport = useMemo(
     () => rutEqualsNormalized(session?.rut, RUT_MISSING_PHOTO_EXPORT_TOOL),
     [session]
   )
 
   const { brokenImageIds, imageProbeState } = useBrokenCatalogImages(
-    products,
+    productsForList,
     showMissingPhotoExport
   )
 
@@ -62,13 +68,13 @@ export default function CatalogPage() {
 
   const missingPhotoCount = useMemo(() => {
     if (!showMissingPhotoExport) return 0
-    return products.filter((p) =>
+    return productsForList.filter((p) =>
       productInStockMissingCatalogPhoto(p, brokenImageIds)
     ).length
-  }, [showMissingPhotoExport, products, brokenImageIds])
+  }, [showMissingPhotoExport, productsForList, brokenImageIds])
 
   const handleDownloadMissingPhotosCsv = useCallback(() => {
-    const csv = buildMissingPhotoCsvRows(products, brokenImageIds)
+    const csv = buildMissingPhotoCsvRows(productsForList, brokenImageIds)
     const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -76,7 +82,7 @@ export default function CatalogPage() {
     a.download = `productos-con-stock-sin-foto-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [products, brokenImageIds])
+  }, [productsForList, brokenImageIds])
 
   useEffect(() => {
     setMounted(true)
@@ -95,13 +101,13 @@ export default function CatalogPage() {
 
   // Extract unique categories
   const categories = useMemo(() => {
-    const types = new Set(products.map((p) => p.type))
+    const types = new Set(productsForList.map((p) => p.type))
     return Array.from(types).sort()
-  }, [products])
+  }, [productsForList])
 
   // Filter products
   const filteredProducts = useMemo(() => {
-    let filtered = products
+    let filtered = productsForList
 
     // Search filter
     if (searchQuery.trim()) {
@@ -126,7 +132,7 @@ export default function CatalogPage() {
     }
 
     return filtered
-  }, [products, searchQuery, selectedCategory, stockFilter])
+  }, [productsForList, searchQuery, selectedCategory, stockFilter])
 
   const handleAddToCart = (product: Product, quantity: number) => {
     const updatedCart = addToCart(product, quantity)
