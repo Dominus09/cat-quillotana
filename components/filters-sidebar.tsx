@@ -175,13 +175,13 @@ export function FiltersSidebar({
 
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 flex flex-col shadow-lg transition-transform duration-300 lg:relative lg:shadow-none lg:max-h-none",
+          "fixed top-0 left-0 h-full bg-card text-card-foreground border-r border-border z-50 flex flex-col shadow-lg transition-transform duration-300 lg:relative lg:shadow-none lg:max-h-none",
           "w-[min(100vw,20rem)] sm:max-w-sm lg:w-64",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0 lg:hidden">
-          <h2 className="text-base font-semibold text-gray-900">Filtrar</h2>
+        <div className="flex items-center justify-between p-4 border-b border-border shrink-0 lg:hidden">
+          <h2 className="text-base font-semibold text-foreground">Filtrar</h2>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Cerrar">
             <X className="w-5 h-5" />
           </Button>
@@ -194,13 +194,13 @@ export function FiltersSidebar({
           )}
         >
           <div className="hidden lg:block mb-4">
-            <h2 className="text-sm font-semibold text-gray-700">Filtros</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground">Filtros</h2>
           </div>
           {filterBody}
         </div>
 
         {isMobileDrawer && (
-          <div className="shrink-0 border-t border-gray-200 bg-white p-3 space-y-2 lg:hidden">
+          <div className="shrink-0 border-t border-border bg-card p-3 space-y-2 lg:hidden">
             <Button
               type="button"
               className="w-full h-11 font-semibold bg-primary text-primary-foreground hover:bg-[#c90510]"

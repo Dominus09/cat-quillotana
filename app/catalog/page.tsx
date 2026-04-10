@@ -23,14 +23,15 @@ import {
   getCartItemCount,
 } from "@/lib/session"
 import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
+import {
+  RUT_MISSING_PHOTO_EXPORT_TOOL,
+  rutEqualsNormalized,
+} from "@/lib/internal-tools"
 import type { ClientSession, CartItem, Product } from "@/types/catalog"
 
 export default function CatalogPage() {
   const router = useRouter()
   const [apiInStockOnly, setApiInStockOnly] = useState(true)
-  const { products, isLoading, error } = useCatalog(apiInStockOnly)
-  const { brokenImageIds, imageProbeState } = useBrokenCatalogImages(products)
-
   const [session, setSession] = useState<ClientSession | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -40,17 +41,30 @@ export default function CatalogPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  const { products, isLoading, error } = useCatalog(apiInStockOnly)
+
+  const showMissingPhotoExport = useMemo(
+    () => rutEqualsNormalized(session?.rut, RUT_MISSING_PHOTO_EXPORT_TOOL),
+    [session]
+  )
+
+  const { brokenImageIds, imageProbeState } = useBrokenCatalogImages(
+    products,
+    showMissingPhotoExport
+  )
+
   const clearCatalogFilters = useCallback(() => {
     setSelectedCategory(null)
     setStockFilter("all")
     setApiInStockOnly(true)
   }, [])
 
-  const missingPhotoCount = useMemo(
-    () =>
-      products.filter((p) => productInStockMissingCatalogPhoto(p, brokenImageIds)).length,
-    [products, brokenImageIds]
-  )
+  const missingPhotoCount = useMemo(() => {
+    if (!showMissingPhotoExport) return 0
+    return products.filter((p) =>
+      productInStockMissingCatalogPhoto(p, brokenImageIds)
+    ).length
+  }, [showMissingPhotoExport, products, brokenImageIds])
 
   const handleDownloadMissingPhotosCsv = useCallback(() => {
     const csv = buildMissingPhotoCsvRows(products, brokenImageIds)
@@ -237,24 +251,26 @@ export default function CatalogPage() {
               <p className="text-sm text-muted-foreground">
                 {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""} encontrado{filteredProducts.length !== 1 ? "s" : ""}
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 h-9 gap-2 border-gray-200"
-                onClick={handleDownloadMissingPhotosCsv}
-                disabled={imageProbeState === "running" || missingPhotoCount === 0}
-                title="CSV: tipo, código de barras, stock, detalle (incluye enlaces rotos y sin imagen en API)"
-              >
-                {imageProbeState === "running" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                {imageProbeState === "running"
-                  ? "Comprobando fotos…"
-                  : `Lista sin foto (${missingPhotoCount})`}
-              </Button>
+              {showMissingPhotoExport ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 h-9 gap-2 border-border"
+                  onClick={handleDownloadMissingPhotosCsv}
+                  disabled={imageProbeState === "running" || missingPhotoCount === 0}
+                  title="CSV: tipo, código de barras, stock, detalle (incluye enlaces rotos y sin imagen en API)"
+                >
+                  {imageProbeState === "running" ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  {imageProbeState === "running"
+                    ? "Comprobando fotos…"
+                    : `Lista sin foto (${missingPhotoCount})`}
+                </Button>
+              ) : null}
             </div>
 
             {/* Product Grid */}

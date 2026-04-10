@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 function formatOrderDisplayId(raw: string | null): string | null {
   if (raw == null || raw.trim() === "") return null
@@ -22,7 +23,10 @@ function SuccessContent() {
   const formattedId = useMemo(() => formatOrderDisplayId(orderId), [orderId])
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6 relative">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md text-center space-y-6">
         <Image
           src="/logo-main.png"

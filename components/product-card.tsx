@@ -17,11 +17,24 @@ const FALLBACK_SEAL = "/logo-seal.png"
 
 function getStockStatus(stock: number) {
   if (stock === 0) {
-    return { label: "Sin stock", bgColor: "bg-red-100", textColor: "text-red-700" }
-  } else if (stock <= 10) {
-    return { label: "Últimas unidades", bgColor: "bg-yellow-100", textColor: "text-yellow-800" }
+    return {
+      label: "Sin stock",
+      badgeClass:
+        "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-200",
+    }
   }
-  return { label: "Disponible", bgColor: "bg-green-100", textColor: "text-green-700" }
+  if (stock <= 10) {
+    return {
+      label: "Últimas unidades",
+      badgeClass:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-200",
+    }
+  }
+  return {
+    label: "Disponible",
+    badgeClass:
+      "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-200",
+  }
 }
 
 function initialImageSrc(product: Product): string {
@@ -122,8 +135,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const maxQty = Math.max(0, product.stock)
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
-      <div className="relative h-40 bg-gray-100 border-b border-gray-100">
+    <div className="bg-card text-card-foreground rounded-xl shadow-sm border border-border overflow-hidden flex flex-col h-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
+      <div className="relative h-40 bg-muted border-b border-border">
         {imageBroken ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-4">
             <Image
@@ -149,7 +162,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         <div className="absolute top-2 right-2">
           <span
-            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.bgColor} ${stockStatus.textColor}`}
+            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.badgeClass}`}
           >
             {stockStatus.label}
           </span>
@@ -157,27 +170,35 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       </div>
 
       <div className="p-4 flex flex-col flex-1">
-        <p className="text-xs uppercase text-gray-500 tracking-wide line-clamp-2">
+        <p className="text-xs uppercase text-muted-foreground tracking-wide line-clamp-2">
           {product.type}
         </p>
 
-        <h3 className="font-semibold text-gray-900 text-sm mt-1 line-clamp-2">
+        <h3 className="font-semibold text-foreground text-sm mt-1 line-clamp-2">
           {product.name}
         </h3>
 
-        <div className="mt-auto pt-3">
-          <p className="text-lg font-bold text-red-600">
+        <div className="mt-auto pt-3 space-y-1">
+          {product.barcode ? (
+            <p
+              className="text-[10px] leading-tight text-muted-foreground font-mono tabular-nums break-all line-clamp-2"
+              title={product.barcode}
+            >
+              {product.barcode}
+            </p>
+          ) : null}
+          <p className="text-lg font-bold text-red-600 dark:text-red-400">
             ${product.price.toLocaleString("es-CL")}
           </p>
         </div>
 
         <div className="mt-3 flex items-center gap-2 min-w-0">
-          <div className="flex items-stretch border border-gray-200 rounded-md bg-white min-w-0 flex-1 max-w-[220px] sm:max-w-[240px] overflow-hidden">
+          <div className="flex items-stretch border border-border rounded-md bg-background min-w-0 flex-1 max-w-[220px] sm:max-w-[240px] overflow-hidden">
             <button
               type="button"
               onClick={decrementQuantity}
               disabled={isOutOfStock || quantity === "" || numericForButtons <= 0}
-              className="flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              className="flex items-center justify-center p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <Minus className="w-3 h-3" />
             </button>
@@ -203,7 +224,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                 (Number.isFinite(numericForButtons) &&
                   numericForButtons >= product.stock)
               }
-              className="flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              className="flex items-center justify-center p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <Plus className="w-3 h-3" />
             </button>

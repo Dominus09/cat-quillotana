@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { LoadingScreen } from "@/components/loading-screen"
+import { ThemeToggle } from "@/components/theme-toggle"
 import {
   getSession,
   getCart,
@@ -147,6 +148,9 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="max-w-lg mx-auto px-4 py-8">
         <div className="mb-6 text-center">
           <Image

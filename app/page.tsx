@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { setSession } from "@/lib/session"
 import { loginClient } from "@/services/api"
 import type { ClientSession } from "@/types/catalog"
@@ -92,6 +93,9 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       {/* Subtle background watermark for large screens */}
       <div className="hidden lg:block fixed inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">

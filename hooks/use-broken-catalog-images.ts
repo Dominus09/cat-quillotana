@@ -27,11 +27,17 @@ function probeImageUrl(src: string, timeoutMs: number): Promise<boolean> {
  * Comprueba en el navegador si la URL de imagen carga (alineado con onError de la tarjeta).
  * Solo se prueban productos con stock y URL que no sea ya un placeholder resuelto.
  */
-export function useBrokenCatalogImages(products: Product[]) {
+export function useBrokenCatalogImages(products: Product[], enabled: boolean) {
   const [brokenImageIds, setBrokenImageIds] = useState<ReadonlySet<number>>(() => new Set())
   const [probeState, setProbeState] = useState<"idle" | "running" | "done">("idle")
 
   useEffect(() => {
+    if (!enabled) {
+      setBrokenImageIds(new Set())
+      setProbeState("done")
+      return
+    }
+
     let cancelled = false
 
     const candidates = products.filter(
@@ -74,7 +80,7 @@ export function useBrokenCatalogImages(products: Product[]) {
     return () => {
       cancelled = true
     }
-  }, [products])
+  }, [products, enabled])
 
   return { brokenImageIds, imageProbeState: probeState }
 }
