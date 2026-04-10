@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Download, Filter } from "lucide-react"
+import { Download, Filter, Loader2 } from "lucide-react"
 import { useCatalog } from "@/hooks/use-catalog"
+import { useBrokenCatalogImages } from "@/hooks/use-broken-catalog-images"
 import { ProductCard } from "@/components/product-card"
 import { ClientHeader } from "@/components/client-header"
 import { FiltersSidebar } from "@/components/filters-sidebar"
@@ -28,6 +29,7 @@ export default function CatalogPage() {
   const router = useRouter()
   const [apiInStockOnly, setApiInStockOnly] = useState(true)
   const { products, isLoading, error } = useCatalog(apiInStockOnly)
+  const { brokenImageIds, imageProbeState } = useBrokenCatalogImages(products)
 
   const [session, setSession] = useState<ClientSession | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
@@ -45,12 +47,13 @@ export default function CatalogPage() {
   }, [])
 
   const missingPhotoCount = useMemo(
-    () => products.filter(productInStockMissingCatalogPhoto).length,
-    [products]
+    () =>
+      products.filter((p) => productInStockMissingCatalogPhoto(p, brokenImageIds)).length,
+    [products, brokenImageIds]
   )
 
   const handleDownloadMissingPhotosCsv = useCallback(() => {
-    const csv = buildMissingPhotoCsvRows(products)
+    const csv = buildMissingPhotoCsvRows(products, brokenImageIds)
     const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -58,7 +61,7 @@ export default function CatalogPage() {
     a.download = `productos-con-stock-sin-foto-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [products])
+  }, [products, brokenImageIds])
 
   useEffect(() => {
     setMounted(true)
@@ -240,11 +243,17 @@ export default function CatalogPage() {
                 size="sm"
                 className="shrink-0 h-9 gap-2 border-gray-200"
                 onClick={handleDownloadMissingPhotosCsv}
-                disabled={missingPhotoCount === 0}
-                title="CSV: tipo, código de barras, stock, detalle (productos con stock y sin foto en catálogo)"
+                disabled={imageProbeState === "running" || missingPhotoCount === 0}
+                title="CSV: tipo, código de barras, stock, detalle (incluye enlaces rotos y sin imagen en API)"
               >
-                <Download className="w-4 h-4" />
-                Lista sin foto ({missingPhotoCount})
+                {imageProbeState === "running" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {imageProbeState === "running"
+                  ? "Comprobando fotos…"
+                  : `Lista sin foto (${missingPhotoCount})`}
               </Button>
             </div>
 

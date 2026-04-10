@@ -9,6 +9,8 @@ export interface Product {
   barcode?: string
   /** La API envió una ruta/URL de imagen no vacía. */
   imageFromApi?: boolean
+  /** Valor crudo de `image` en la API (antes de resolver URL), para heurísticas. */
+  catalogImageRaw?: string
 }
 
 export interface ClientSession {

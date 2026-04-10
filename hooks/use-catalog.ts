@@ -3,6 +3,8 @@ import type { Product } from "@/types/catalog"
 import { getCatalog } from "@/services/api"
 import { getSession } from "@/lib/session"
 
+const EMPTY_PRODUCTS: Product[] = []
+
 type CatalogKey = readonly ["catalog", string, boolean]
 
 async function catalogFetcher([, price_list, inStockOnly]: CatalogKey): Promise<
@@ -30,7 +32,7 @@ export function useCatalog(inStockOnly: boolean) {
   )
 
   return {
-    products: data || [],
+    products: data ?? EMPTY_PRODUCTS,
     isLoading: key !== null ? isLoading : false,
     error,
     refresh: mutate,
