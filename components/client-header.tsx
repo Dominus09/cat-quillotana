@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ShoppingCart, Search, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
 import type { ClientSession } from "@/types/catalog"
 
 interface ClientHeaderProps {
@@ -44,7 +45,7 @@ export function ClientHeader({
           {/* Logo */}
           <div className="flex-shrink-0">
             <Image
-              src="/logo-main.png"
+              src={LOGO_MAIN_SRC}
               alt="Distribuidora La Quillotana"
               width={100}
               height={50}

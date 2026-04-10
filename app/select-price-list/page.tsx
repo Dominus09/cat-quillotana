@@ -8,6 +8,7 @@ import { getSession, setSession, updateSessionPriceList } from "@/lib/session"
 import type { ClientSession } from "@/types/catalog"
 import { LoadingScreen } from "@/components/loading-screen"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LOGO_MAIN_SRC, LOGO_SEAL_SRC } from "@/lib/branding-assets"
 
 export default function SelectPriceListPage() {
   const router = useRouter()
@@ -50,7 +51,7 @@ export default function SelectPriceListPage() {
       <div className="hidden lg:block fixed inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
           <Image
-            src="/logo-seal.png"
+            src={LOGO_SEAL_SRC}
             alt=""
             width={600}
             height={600}
@@ -64,7 +65,7 @@ export default function SelectPriceListPage() {
         <div className="bg-card rounded-xl shadow-lg p-8 relative z-10 space-y-6">
           <div className="text-center space-y-2">
             <Image
-              src="/logo-main.png"
+              src={LOGO_MAIN_SRC}
               alt="Distribuidora La Quillotana"
               width={200}
               height={120}

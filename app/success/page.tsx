@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
 
 function formatOrderDisplayId(raw: string | null): string | null {
   if (raw == null || raw.trim() === "") return null
@@ -29,7 +30,7 @@ function SuccessContent() {
       </div>
       <div className="w-full max-w-md text-center space-y-6">
         <Image
-          src="/logo-main.png"
+          src={LOGO_MAIN_SRC}
           alt="Distribuidora La Quillotana"
           width={180}
           height={90}

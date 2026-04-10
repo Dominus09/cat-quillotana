@@ -23,6 +23,7 @@ import {
   getCartTotal,
   clearCart,
 } from "@/lib/session"
+import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
 import { createOrder } from "@/services/api"
 import type { CartItem } from "@/types/catalog"
 
@@ -154,7 +155,7 @@ export default function CheckoutPage() {
       <div className="max-w-lg mx-auto px-4 py-8">
         <div className="mb-6 text-center">
           <Image
-            src="/logo-main.png"
+            src={LOGO_MAIN_SRC}
             alt="Distribuidora La Quillotana"
             width={160}
             height={80}

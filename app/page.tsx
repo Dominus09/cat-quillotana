@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LOGO_MAIN_SRC, LOGO_SEAL_SRC } from "@/lib/branding-assets"
 import { setSession } from "@/lib/session"
 import { loginClient } from "@/services/api"
 import type { ClientSession } from "@/types/catalog"
@@ -100,7 +101,7 @@ export default function LoginPage() {
       <div className="hidden lg:block fixed inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
           <Image
-            src="/logo-seal.png"
+            src={LOGO_SEAL_SRC}
             alt=""
             width={600}
             height={600}
@@ -115,7 +116,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center gap-6">
             {/* Logo */}
             <Image
-              src="/logo-main.png"
+              src={LOGO_MAIN_SRC}
               alt="Distribuidora La Quillotana"
               width={200}
               height={120}

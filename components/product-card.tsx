@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Minus, ShoppingCart } from "lucide-react"
+import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
 import type { Product } from "@/types/catalog"
 
 interface ProductCardProps {
@@ -13,7 +14,7 @@ interface ProductCardProps {
 }
 
 const PLACEHOLDER_WEBP = "/placeholder2.webp"
-const FALLBACK_SEAL = "/logo-seal.png"
+const FALLBACK_SEAL = LOGO_SEAL_SRC
 
 function getStockStatus(stock: number) {
   if (stock === 0) {

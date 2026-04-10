@@ -23,6 +23,7 @@ import {
   getCartItemCount,
 } from "@/lib/session"
 import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
+import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
 import {
   RUT_MISSING_PHOTO_EXPORT_TOOL,
   rutEqualsNormalized,
@@ -165,7 +166,7 @@ export default function CatalogPage() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <Image
-            src="/logo-seal.png"
+            src={LOGO_SEAL_SRC}
             alt=""
             width={80}
             height={80}
@@ -194,7 +195,7 @@ export default function CatalogPage() {
       <div className="hidden lg:block fixed inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
           <Image
-            src="/logo-seal.png"
+            src={LOGO_SEAL_SRC}
             alt=""
             width={500}
             height={500}
@@ -287,7 +288,7 @@ export default function CatalogPage() {
             ) : (
               <div className="text-center py-12">
                 <Image
-                  src="/logo-seal.png"
+                  src={LOGO_SEAL_SRC}
                   alt=""
                   width={80}
                   height={80}

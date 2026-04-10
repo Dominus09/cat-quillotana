@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
 
 export function LoadingScreen() {
   return (
@@ -8,7 +9,7 @@ export function LoadingScreen() {
       <div className="flex flex-col items-center gap-4">
         <div className="animate-spin">
           <Image
-            src="/logo-seal.png"
+            src={LOGO_SEAL_SRC}
             alt="Cargando..."
             width={100}
             height={100}
