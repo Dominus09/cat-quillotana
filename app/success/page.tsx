@@ -49,6 +49,13 @@ function SuccessContent() {
               Recibirás confirmación según los datos de contacto indicados.
             </p>
           )}
+          <p className="text-sm text-muted-foreground leading-relaxed text-balance max-w-sm mx-auto pt-1">
+            Un vendedor te enviará la <span className="text-foreground/90 font-medium">orden de compra</span> con los precios confirmados al{" "}
+            <span className="text-foreground/90 font-medium">número de teléfono</span> que ingresaste en el pedido.
+            <span className="block mt-3 text-foreground/85 font-medium">
+              Gracias por confiar en Distribuidora La Quillotana.
+            </span>
+          </p>
         </div>
         <Button
           asChild
