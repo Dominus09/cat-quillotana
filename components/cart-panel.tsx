@@ -170,18 +170,18 @@ export function CartPanel({
                     key={item.product.id}
                     className="flex gap-3 p-3 bg-muted rounded-lg"
                   >
-                    <div className="w-16 h-16 rounded-md bg-card overflow-hidden flex-shrink-0">
+                    <div className="w-16 h-16 rounded-md bg-neutral-100 overflow-hidden flex-shrink-0 ring-1 ring-black/[0.05] dark:bg-zinc-800 dark:ring-white/[0.08] dark:shadow-[inset_0_0_12px_rgba(0,0,0,0.25)]">
                       <Image
                         src={item.product.image || "/icon.svg"}
                         alt={item.product.name}
                         width={64}
                         height={64}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain p-1 dark:mix-blend-multiply dark:brightness-[0.96]"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.src = "/icon.svg"
                           target.className =
-                            "w-full h-full object-contain opacity-40 p-2"
+                            "w-full h-full object-contain opacity-40 p-2 dark:opacity-50"
                         }}
                       />
                     </div>

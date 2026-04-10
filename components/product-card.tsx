@@ -136,28 +136,30 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
   return (
     <div className="bg-card text-card-foreground rounded-xl shadow-sm border border-border overflow-hidden flex flex-col h-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
-      <div className="relative h-40 bg-muted border-b border-border">
+      <div className="relative h-40 bg-muted border-b border-border dark:bg-zinc-950 dark:border-zinc-800/70">
         {imageBroken ? (
-          <div className="w-full h-full flex flex-col items-center justify-center p-4">
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 dark:bg-zinc-950">
             <Image
               src="/icon.svg"
               alt=""
               width={60}
               height={60}
-              className="opacity-40"
+              className="opacity-40 dark:opacity-50"
             />
           </div>
         ) : (
-          <Image
-            key={displaySrc}
-            src={displaySrc}
-            alt={product.name}
-            fill
-            className="object-contain p-3"
-            onError={handleImageError}
-            loading="lazy"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
+          <div className="absolute inset-2 rounded-lg overflow-hidden bg-neutral-50/90 ring-1 ring-black/[0.04] dark:bg-zinc-800 dark:ring-white/[0.08] dark:shadow-[inset_0_0_28px_rgba(0,0,0,0.35)]">
+            <Image
+              key={displaySrc}
+              src={displaySrc}
+              alt={product.name}
+              fill
+              className="object-contain p-2 dark:mix-blend-multiply dark:brightness-[0.96] dark:contrast-[1.03]"
+              onError={handleImageError}
+              loading="lazy"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+          </div>
         )}
 
         <div className="absolute top-2 right-2">
