@@ -158,11 +158,6 @@ export default function LoginPage() {
                 {loading ? "Cargando..." : "Entrar al catálogo"}
               </Button>
             </form>
-
-            {/* Test mode hint */}
-            <p className="text-sm text-muted-foreground text-center">
-              Modo prueba: escribe <span className="font-mono font-semibold text-secondary">test</span>
-            </p>
           </div>
         </div>
       </div>

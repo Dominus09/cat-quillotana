@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Filter } from "lucide-react"
+import { Download, Filter } from "lucide-react"
 import { useCatalog } from "@/hooks/use-catalog"
 import { ProductCard } from "@/components/product-card"
 import { ClientHeader } from "@/components/client-header"
@@ -21,11 +21,12 @@ import {
   clearCart,
   getCartItemCount,
 } from "@/lib/session"
+import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
 import type { ClientSession, CartItem, Product } from "@/types/catalog"
 
 export default function CatalogPage() {
   const router = useRouter()
-  const [apiInStockOnly, setApiInStockOnly] = useState(false)
+  const [apiInStockOnly, setApiInStockOnly] = useState(true)
   const { products, isLoading, error } = useCatalog(apiInStockOnly)
 
   const [session, setSession] = useState<ClientSession | null>(null)
@@ -40,8 +41,24 @@ export default function CatalogPage() {
   const clearCatalogFilters = useCallback(() => {
     setSelectedCategory(null)
     setStockFilter("all")
-    setApiInStockOnly(false)
+    setApiInStockOnly(true)
   }, [])
+
+  const missingPhotoCount = useMemo(
+    () => products.filter(productInStockMissingCatalogPhoto).length,
+    [products]
+  )
+
+  const handleDownloadMissingPhotosCsv = useCallback(() => {
+    const csv = buildMissingPhotoCsvRows(products)
+    const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `productos-con-stock-sin-foto-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [products])
 
   useEffect(() => {
     setMounted(true)
@@ -213,10 +230,22 @@ export default function CatalogPage() {
             </div>
 
             {/* Products Count */}
-            <div className="mb-4">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""} encontrado{filteredProducts.length !== 1 ? "s" : ""}
               </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 h-9 gap-2 border-gray-200"
+                onClick={handleDownloadMissingPhotosCsv}
+                disabled={missingPhotoCount === 0}
+                title="CSV: tipo, código de barras, stock, detalle (productos con stock y sin foto en catálogo)"
+              >
+                <Download className="w-4 h-4" />
+                Lista sin foto ({missingPhotoCount})
+              </Button>
             </div>
 
             {/* Product Grid */}
@@ -248,7 +277,7 @@ export default function CatalogPage() {
                     setSearchQuery("")
                     setSelectedCategory(null)
                     setStockFilter("all")
-                    setApiInStockOnly(false)
+                    setApiInStockOnly(true)
                   }}
                   className="text-primary mt-2"
                 >

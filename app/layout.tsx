@@ -9,15 +9,13 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Catálogo Mayorista | Distribuidora La Quillotana',
   description: 'Catálogo mayorista de productos - Distribuidora La Quillotana',
-  generator: 'v0.app',
   icons: {
     icon: [
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
+      { url: '/favicon_32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon_64.png', sizes: '64x64', type: 'image/png' },
     ],
-    apple: '/icon.svg',
+    shortcut: '/favicon_32.png',
+    apple: '/favicon_128.png',
   },
 }
 

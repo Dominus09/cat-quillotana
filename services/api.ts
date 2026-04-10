@@ -76,6 +76,7 @@ export function mapApiToProduct(item: ApiCatalogItem): Product {
     price: item.price ?? 0,
     stock: item.stock,
     barcode: (item.barcode ?? "").trim() || undefined,
+    imageFromApi: !!(item.image?.trim()),
   }
 }
 

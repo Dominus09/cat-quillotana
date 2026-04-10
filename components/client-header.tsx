@@ -1,8 +1,19 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { ShoppingCart, Search, LogOut } from "lucide-react"
 import type { ClientSession } from "@/types/catalog"
 
@@ -23,6 +34,8 @@ export function ClientHeader({
   onCartClick,
   onLogout,
 }: ClientHeaderProps) {
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 h-16">
       <div className="max-w-7xl mx-auto px-4 h-full">
@@ -88,7 +101,7 @@ export function ClientHeader({
             <Button
               variant="ghost"
               size="icon"
-              onClick={onLogout}
+              onClick={() => setLogoutConfirmOpen(true)}
               aria-label="Cerrar sesión"
               className="text-gray-500 hover:text-gray-700"
             >
@@ -96,6 +109,29 @@ export function ClientHeader({
             </Button>
           </div>
         </div>
+
+        <AlertDialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Cerrar sesión?</AlertDialogTitle>
+              <AlertDialogDescription>
+                ¿Estás seguro de que deseas salir? Se cerrará tu sesión en esta página.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-primary text-primary-foreground hover:bg-[#c90510]"
+                onClick={() => {
+                  setLogoutConfirmOpen(false)
+                  onLogout()
+                }}
+              >
+                Salir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Mobile Search */}
         <div className="pb-3 sm:hidden">

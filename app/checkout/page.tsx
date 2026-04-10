@@ -215,6 +215,7 @@ export default function CheckoutPage() {
                 <SelectItem value="transferencia">Transferencia</SelectItem>
                 <SelectItem value="efectivo">Efectivo</SelectItem>
                 <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                <SelectItem value="cheque">Cheque</SelectItem>
                 <SelectItem value="otro">Otro</SelectItem>
               </SelectContent>
             </Select>

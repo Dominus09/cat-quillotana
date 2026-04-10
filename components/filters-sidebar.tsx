@@ -61,18 +61,18 @@ export function FiltersSidebar({
 
         <div className="flex items-start gap-2 py-2 px-1 mb-3 rounded-md hover:bg-gray-50">
           <Checkbox
-            id="catalog-in-stock-api"
-            checked={apiInStockOnly}
+            id="catalog-show-without-stock"
+            checked={!apiInStockOnly}
             onCheckedChange={(checked: boolean | "indeterminate") =>
-              onApiInStockOnlyChange(checked === true)
+              onApiInStockOnlyChange(checked !== true)
             }
             className="mt-0.5"
           />
           <Label
-            htmlFor="catalog-in-stock-api"
+            htmlFor="catalog-show-without-stock"
             className="text-sm text-gray-700 font-normal leading-snug cursor-pointer"
           >
-            Solo productos con stock
+            Visualizar productos sin stock
           </Label>
         </div>
 
