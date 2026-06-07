@@ -1,12 +1,16 @@
 "use client"
 
-import { Suspense, useMemo } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { OrderCommercialSummary } from "@/components/order-commercial-summary"
 import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
+import { getOrderSuccessMeta, type OrderSuccessMeta } from "@/lib/order-success"
+import { getSession } from "@/lib/session"
+import type { ClientSession } from "@/types/catalog"
 
 function formatOrderDisplayId(raw: string | null): string | null {
   if (raw == null || raw.trim() === "") return null
@@ -21,7 +25,19 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get("id")
 
+  const [orderMeta, setOrderMeta] = useState<OrderSuccessMeta | null>(null)
+  const [session, setSession] = useState<ClientSession | null>(null)
+
+  useEffect(() => {
+    setOrderMeta(getOrderSuccessMeta())
+    setSession(getSession())
+  }, [])
+
   const formattedId = useMemo(() => formatOrderDisplayId(orderId), [orderId])
+
+  const clientName = orderMeta?.clientName ?? session?.name
+  const city = orderMeta?.city ?? session?.city
+  const vendedor = orderMeta?.vendedor
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6 relative">
@@ -49,9 +65,23 @@ function SuccessContent() {
               Recibirás confirmación según los datos de contacto indicados.
             </p>
           )}
+
+          <OrderCommercialSummary
+            variant="success"
+            clientName={clientName}
+            city={city}
+            vendedor={vendedor}
+            className="text-left mt-4"
+          />
+
           <p className="text-sm text-muted-foreground leading-relaxed text-balance max-w-sm mx-auto pt-1">
-            Un vendedor te enviará la <span className="text-foreground/90 font-medium">orden de compra</span> con los precios confirmados al{" "}
-            <span className="text-foreground/90 font-medium">número de teléfono</span> que ingresaste en el pedido.
+            Un vendedor te enviará la{" "}
+            <span className="text-foreground/90 font-medium">orden de compra</span>{" "}
+            con los precios confirmados al{" "}
+            <span className="text-foreground/90 font-medium">
+              número de teléfono
+            </span>{" "}
+            que ingresaste en el pedido.
             <span className="block mt-3 text-foreground/85 font-medium">
               Gracias por confiar en Distribuidora La Quillotana.
             </span>

@@ -25,6 +25,8 @@ import {
 } from "@/lib/session"
 import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
 import { createOrder } from "@/services/api"
+import { buildOrderSuccessMeta, saveOrderSuccessMeta } from "@/lib/order-success"
+import { OrderCommercialSummary } from "@/components/order-commercial-summary"
 import type { CartItem } from "@/types/catalog"
 
 export default function CheckoutPage() {
@@ -123,6 +125,15 @@ export default function CheckoutPage() {
     setSubmitting(true)
     try {
       const res = await createOrder(order)
+      saveOrderSuccessMeta(
+        buildOrderSuccessMeta(res, {
+          clientName: session.name,
+          city: session.city,
+          priceList: session.price_list ?? "",
+          documentType,
+          paymentMethod,
+        })
+      )
       clearCart()
       const orderNum =
         res.id ??
@@ -275,6 +286,15 @@ export default function CheckoutPage() {
           {error && (
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
+
+          <OrderCommercialSummary
+            variant="checkout"
+            clientName={session.name}
+            city={session.city}
+            priceList={session.price_list}
+            documentType={documentType}
+            paymentMethod={paymentMethod}
+          />
 
           <Button
             type="submit"

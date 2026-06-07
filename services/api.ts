@@ -132,6 +132,13 @@ export type CreateOrderResponse = Record<string, unknown> & {
   id?: number
   order_id?: number
   number?: string | number
+  order_number?: string | number
+  /** Campos opcionales si el backend los incluye */
+  vendedor?: string | { name?: string; nombre?: string }
+  vendedor_asignado?: string | { name?: string; nombre?: string }
+  city?: string
+  ciudad?: string
+  client?: { name?: string; city?: string; ciudad?: string }
 }
 
 export async function createOrder(
