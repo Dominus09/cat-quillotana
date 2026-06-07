@@ -134,8 +134,8 @@ export function getOrderSuccessMeta(): OrderSuccessMeta | null {
 }
 
 const PRICE_LIST_LABELS: Record<string, string> = {
-  factura: "Factura",
-  comoditi: "Boleta (Comoditi)",
+  factura: "Ruta Factura",
+  comoditi: "Comoditi Boletas",
   melinka: "Melinka",
 }
 

@@ -86,7 +86,7 @@ export default function SelectPriceListPage() {
               className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-[#c90510]"
               onClick={() => choose("factura")}
             >
-              Factura
+              Ruta Factura
             </Button>
             <Button
               type="button"
@@ -94,7 +94,7 @@ export default function SelectPriceListPage() {
               className="w-full h-12 text-base font-semibold border-2"
               onClick={() => choose("comoditi")}
             >
-              Boleta (Comoditi)
+              Comoditi Boletas
             </Button>
           </div>
         </div>
