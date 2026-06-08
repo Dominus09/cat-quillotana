@@ -1,4 +1,5 @@
-import type { Product } from "@/types/catalog"
+import { parseSaleType } from "@/lib/sale-quantity"
+import type { Product, SaleType } from "@/types/catalog"
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL || "https://api.quillotana.cl"
@@ -11,6 +12,7 @@ export interface LoginClientResponse {
   name: string
   city: string
   is_melinka: boolean
+  is_catalog_admin?: boolean
 }
 
 export interface ApiCatalogItem {
@@ -21,6 +23,43 @@ export interface ApiCatalogItem {
   stock: number
   image: string | null
   price: number | null
+  units_per_box?: number | null
+  sale_type?: string | null
+  quantity_step?: number | null
+}
+
+export interface CatalogHealthSummary {
+  title: string
+  total: number
+  sin_fotografia: number
+  sin_sec: number
+  sin_tipo_venta: number
+  sec_sin_quantity_step: number
+  unitario_por_falta_sec: number
+}
+
+export type CatalogHealthStatus = "completo" | "incompleto" | "advertencia" | "critico"
+
+export interface CatalogHealthDetailItem {
+  variant_id: number
+  barcode: string | null
+  product_name: string
+  has_photo: boolean
+  sec: number | null
+  sale_type: SaleType
+  quantity_step: number
+  auto_unitario_no_sec?: boolean
+  missing_sale_type?: boolean
+  missing_quantity_step?: boolean
+  status: CatalogHealthStatus
+  status_label: string
+}
+
+export interface CatalogHealthDetailResponse {
+  items: CatalogHealthDetailItem[]
+  limit: number
+  offset: number
+  count: number
 }
 
 function parseLoginErrorMessage(body: unknown): string | null {
@@ -33,6 +72,35 @@ function parseLoginErrorMessage(body: unknown): string | null {
   }
   if (typeof o.message === "string") return o.message
   if (typeof o.error === "string") return o.error
+  return null
+}
+
+function parseOptionalPositiveInt(raw: unknown): number | null {
+  if (raw == null || raw === "") return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.floor(n)
+}
+
+function parseCreateOrderErrorMessage(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null
+  const o = body as Record<string, unknown>
+  const detail = o.detail
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const d = detail as Record<string, unknown>
+    if (d.error === "Cantidad inválida") {
+      if (typeof d.message === "string" && d.message.trim()) return d.message.trim()
+      const product = typeof d.product === "string" ? d.product : "Producto"
+      const step = d.required_step
+      if (step != null) {
+        return `${product} se vende en múltiplos de ${step} unidades`
+      }
+    }
+    if (typeof d.message === "string" && d.message.trim()) return d.message.trim()
+    if (typeof d.error === "string" && d.error.trim()) return d.error.trim()
+  }
+  if (typeof detail === "string" && detail.trim()) return detail.trim()
+  if (typeof o.message === "string" && o.message.trim()) return o.message.trim()
   return null
 }
 
@@ -79,6 +147,9 @@ export function mapApiToProduct(item: ApiCatalogItem): Product {
     barcode: (item.barcode ?? "").trim() || undefined,
     imageFromApi: !!raw,
     catalogImageRaw: raw || undefined,
+    units_per_box: parseOptionalPositiveInt(item.units_per_box),
+    sale_type: item.sale_type ? parseSaleType(item.sale_type) : "UNITARIO",
+    quantity_step: parseOptionalPositiveInt(item.quantity_step) ?? 1,
   }
 }
 
@@ -156,13 +227,42 @@ export async function createOrder(
     let message = "Error al crear pedido"
     try {
       const body = await res.json()
-      if (typeof body?.detail === "string") message = body.detail
-      else if (typeof body?.message === "string") message = body.message
+      const parsed = parseCreateOrderErrorMessage(body)
+      if (parsed) message = parsed
     } catch {
       // keep default message
     }
     throw new Error(message)
   }
 
+  return res.json()
+}
+
+export async function getCatalogHealthSummary(
+  rut: string
+): Promise<CatalogHealthSummary> {
+  const qs = new URLSearchParams({ rut: rut.trim() })
+  const res = await fetch(
+    `${API_URL}/api/catalog/admin/health-summary?${qs.toString()}`
+  )
+  if (!res.ok) {
+    throw new Error("No se pudo cargar el estado del catálogo")
+  }
+  return res.json()
+}
+
+export async function getCatalogHealthDetail(
+  rut: string,
+  params?: { limit?: number; offset?: number }
+): Promise<CatalogHealthDetailResponse> {
+  const qs = new URLSearchParams({ rut: rut.trim() })
+  if (params?.limit != null) qs.set("limit", String(params.limit))
+  if (params?.offset != null) qs.set("offset", String(params.offset))
+  const res = await fetch(
+    `${API_URL}/api/catalog/admin/health-detail?${qs.toString()}`
+  )
+  if (!res.ok) {
+    throw new Error("No se pudo cargar el detalle del catálogo")
+  }
   return res.json()
 }

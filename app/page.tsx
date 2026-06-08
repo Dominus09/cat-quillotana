@@ -71,6 +71,7 @@ export default function LoginPage() {
           city: data.city,
           is_melinka: true,
           price_list: "melinka",
+          is_catalog_admin: data.is_catalog_admin === true,
         }
         setSession(session)
         router.push("/catalog")
@@ -81,6 +82,7 @@ export default function LoginPage() {
           rut: trimmed,
           city: data.city,
           is_melinka: false,
+          is_catalog_admin: data.is_catalog_admin === true,
         }
         setSession(session)
         router.push("/select-price-list")

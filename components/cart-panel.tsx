@@ -1,11 +1,11 @@
 "use client"
 
-import { type ChangeEvent } from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { X, Plus, Minus, Trash2, ShoppingBag } from "lucide-react"
+import { X, Trash2, ShoppingBag } from "lucide-react"
+import { SecQuantityControl } from "@/components/sec-quantity-control"
+import { getSaleRuleLabel, withCommercialDefaults } from "@/lib/sale-quantity"
 import type { CartItem } from "@/types/catalog"
 
 interface CartPanelProps {
@@ -30,77 +30,6 @@ export function buildOrderSummary(items: CartItem[]): {
   )
   const text = `${lines.join("\n")}\n\nTotal: $${total.toLocaleString("es-CL")}`
   return { lines, total, text }
-}
-
-function CartQuantityControl({
-  productId,
-  quantity,
-  stock,
-  disabled,
-  onUpdateQuantity,
-}: {
-  productId: number
-  quantity: number
-  stock: number
-  disabled: boolean
-  onUpdateQuantity: (productId: number, quantity: number) => void
-}) {
-  const clamp = (n: number) => {
-    if (stock <= 0) return 1
-    if (!Number.isFinite(n) || n < 1) return 1
-    return Math.min(n, stock)
-  }
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value
-    if (v === "") {
-      onUpdateQuantity(productId, 1)
-      return
-    }
-    const n = Number(v)
-    if (!Number.isInteger(n)) return
-    onUpdateQuantity(productId, clamp(n))
-  }
-
-  const handleBlur = () => {
-    onUpdateQuantity(productId, clamp(quantity))
-  }
-
-  const maxQty = Math.max(1, stock)
-
-  return (
-    <div className="flex items-center border border-border rounded-md bg-card overflow-hidden max-w-[200px]">
-      <button
-        type="button"
-        onClick={() => onUpdateQuantity(productId, clamp(quantity - 1))}
-        disabled={disabled || quantity <= 1}
-        className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 shrink-0"
-        aria-label="Disminuir cantidad"
-      >
-        <Minus className="w-3 h-3" />
-      </button>
-      <Input
-        type="number"
-        min={1}
-        max={maxQty}
-        disabled={disabled}
-        value={quantity}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className="h-9 min-w-[60px] w-16 sm:min-w-[70px] sm:w-20 max-w-[5.5rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-        aria-label="Cantidad en carrito"
-      />
-      <button
-        type="button"
-        onClick={() => onUpdateQuantity(productId, clamp(quantity + 1))}
-        disabled={disabled || quantity >= stock}
-        className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 shrink-0"
-        aria-label="Aumentar cantidad"
-      >
-        <Plus className="w-3 h-3" />
-      </button>
-    </div>
-  )
 }
 
 export function CartPanel({
@@ -164,7 +93,8 @@ export function CartPanel({
           ) : (
             <div className="space-y-4">
               {items.map((item) => {
-                const subtotal = item.product.price * item.quantity
+                const product = withCommercialDefaults(item.product)
+                const subtotal = product.price * item.quantity
                 return (
                   <div
                     key={item.product.id}
@@ -172,8 +102,8 @@ export function CartPanel({
                   >
                     <div className="w-16 h-16 rounded-md bg-neutral-100 overflow-hidden flex-shrink-0 ring-1 ring-black/[0.05] dark:bg-zinc-800 dark:ring-white/[0.08] dark:shadow-[inset_0_0_12px_rgba(0,0,0,0.25)]">
                       <Image
-                        src={item.product.image || "/icon.svg"}
-                        alt={item.product.name}
+                        src={product.image || "/icon.svg"}
+                        alt={product.name}
                         width={64}
                         height={64}
                         className="w-full h-full object-contain p-1 dark:mix-blend-multiply dark:brightness-[0.96]"
@@ -190,15 +120,18 @@ export function CartPanel({
                       <div className="flex justify-between gap-2 items-start">
                         <div className="min-w-0">
                           <h4 className="font-medium text-foreground text-sm leading-snug line-clamp-2">
-                            {item.product.name}
+                            {product.name}
                           </h4>
                           <p className="text-[11px] text-muted-foreground uppercase tracking-wide line-clamp-1 mt-0.5">
-                            {item.product.type}
+                            {product.type}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {getSaleRuleLabel(product)}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             Precio unit.:{" "}
                             <span className="font-semibold text-foreground">
-                              ${item.product.price.toLocaleString("es-CL")}
+                              ${product.price.toLocaleString("es-CL")}
                             </span>
                           </p>
                         </div>
@@ -213,12 +146,16 @@ export function CartPanel({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <CartQuantityControl
-                          productId={item.product.id}
+                        <SecQuantityControl
+                          product={product}
                           quantity={item.quantity}
-                          stock={item.product.stock}
-                          disabled={item.product.stock <= 0}
-                          onUpdateQuantity={onUpdateQuantity}
+                          onQuantityChange={(qty) =>
+                            onUpdateQuantity(item.product.id, qty)
+                          }
+                          disabled={product.stock <= 0}
+                          showAdjustHint
+                          containerClassName="flex items-stretch border border-border rounded-md bg-card overflow-hidden max-w-[200px]"
+                          inputClassName="h-9 min-w-[60px] w-16 sm:min-w-[70px] sm:w-20 max-w-[5.5rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                       </div>
 

@@ -26,6 +26,7 @@ import {
 import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
 import { createOrder } from "@/services/api"
 import { buildOrderSuccessMeta, saveOrderSuccessMeta } from "@/lib/order-success"
+import { validateCartForCheckout } from "@/lib/sale-quantity"
 import { OrderCommercialSummary } from "@/components/order-commercial-summary"
 import type { CartItem } from "@/types/catalog"
 
@@ -44,6 +45,7 @@ export default function CheckoutPage() {
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [quantityErrors, setQuantityErrors] = useState<string[]>([])
 
   useEffect(() => {
     setMounted(true)
@@ -70,11 +72,19 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError("")
+    setQuantityErrors([])
 
     if (submitting) return
 
     if (cart.length === 0) {
       setError("El carrito está vacío.")
+      return
+    }
+
+    const qtyCheck = validateCartForCheckout(cart)
+    if (!qtyCheck.valid) {
+      setQuantityErrors(qtyCheck.messages)
+      setError("Hay productos con cantidades no válidas.")
       return
     }
 
@@ -284,7 +294,16 @@ export default function CheckoutPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
+            <div className="space-y-2">
+              <p className="text-sm text-destructive text-center">{error}</p>
+              {quantityErrors.length > 0 ? (
+                <ul className="text-sm text-destructive/90 list-disc pl-5 space-y-1">
+                  {quantityErrors.map((msg) => (
+                    <li key={msg}>{msg}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           )}
 
           <OrderCommercialSummary

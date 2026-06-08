@@ -11,6 +11,7 @@ import { ProductCard } from "@/components/product-card"
 import { ClientHeader } from "@/components/client-header"
 import { FiltersSidebar } from "@/components/filters-sidebar"
 import { CartPanel } from "@/components/cart-panel"
+import { CatalogAdminPanel } from "@/components/catalog-admin-panel"
 import { LoadingScreen } from "@/components/loading-screen"
 import {
   getSession,
@@ -241,6 +242,10 @@ export default function CatalogPage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {session.is_catalog_admin ? (
+              <CatalogAdminPanel rut={session.rut} />
+            ) : null}
+
             {/* Mobile Filter Button */}
             <div className="lg:hidden mb-4">
               <Button

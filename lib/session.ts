@@ -1,4 +1,8 @@
 import type { ClientSession, CartItem, Product } from "@/types/catalog"
+import {
+  clampValidQuantity,
+  withCommercialDefaults,
+} from "@/lib/sale-quantity"
 
 const SESSION_KEY = "quillotana_session"
 const CART_KEY = "quillotana_cart"
@@ -39,12 +43,16 @@ export function setCart(cart: CartItem[]): void {
 
 export function addToCart(product: Product, quantity: number = 1): CartItem[] {
   const cart = getCart()
-  const existingIndex = cart.findIndex((item) => item.product.id === product.id)
+  const p = withCommercialDefaults(product)
+  const qty = clampValidQuantity(quantity, p)
+  const existingIndex = cart.findIndex((item) => item.product.id === p.id)
 
   if (existingIndex >= 0) {
-    cart[existingIndex].quantity += quantity
+    const merged = cart[existingIndex].quantity + qty
+    cart[existingIndex].quantity = clampValidQuantity(merged, p)
+    cart[existingIndex].product = p
   } else {
-    cart.push({ product, quantity })
+    cart.push({ product: p, quantity: qty })
   }
 
   setCart(cart)
@@ -56,10 +64,12 @@ export function updateCartItem(productId: number, quantity: number): CartItem[] 
   const index = cart.findIndex((item) => item.product.id === productId)
 
   if (index >= 0) {
+    const p = withCommercialDefaults(cart[index].product)
     if (quantity <= 0) {
       cart.splice(index, 1)
     } else {
-      cart[index].quantity = quantity
+      cart[index].quantity = clampValidQuantity(quantity, p)
+      cart[index].product = p
     }
   }
 

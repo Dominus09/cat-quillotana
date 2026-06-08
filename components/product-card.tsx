@@ -1,11 +1,23 @@
 "use client"
 
-import { useState, useEffect, type ChangeEvent } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, Minus, ShoppingCart } from "lucide-react"
+import { ShoppingCart } from "lucide-react"
 import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
+import {
+  canAddProductToCart,
+  clampValidQuantity,
+  getMaxValidQuantity,
+  getSaleRuleLabel,
+  getStockInsufficientMessage,
+  isValidQuantity,
+  withCommercialDefaults,
+} from "@/lib/sale-quantity"
+import {
+  SecQuantityControl,
+  initialQuantityForProduct,
+} from "@/components/sec-quantity-control"
 import type { Product } from "@/types/catalog"
 
 interface ProductCardProps {
@@ -43,18 +55,17 @@ function initialImageSrc(product: Product): string {
   return primary ? primary : PLACEHOLDER_WEBP
 }
 
-type QuantityValue = number | ""
-
-function toNumericQty(q: QuantityValue): number {
-  if (q === "") return NaN
-  return typeof q === "number" ? q : NaN
-}
-
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const [quantity, setQuantity] = useState<QuantityValue>(1)
+  const commercial = withCommercialDefaults(product)
+  const [quantity, setQuantity] = useState(() => initialQuantityForProduct(commercial))
   const [qtyError, setQtyError] = useState("")
   const [displaySrc, setDisplaySrc] = useState(() => initialImageSrc(product))
   const [imageBroken, setImageBroken] = useState(false)
+
+  const stockInsufficient = !canAddProductToCart(commercial)
+  const isOutOfStock = product.stock === 0 || stockInsufficient
+  const stockStatus = getStockStatus(product.stock)
+  const saleRuleLabel = getSaleRuleLabel(commercial)
 
   useEffect(() => {
     setDisplaySrc(initialImageSrc(product))
@@ -62,21 +73,19 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   }, [product.id, product.image])
 
   useEffect(() => {
-    setQuantity(1)
+    setQuantity(initialQuantityForProduct(withCommercialDefaults(product)))
     setQtyError("")
-  }, [product.id])
+  }, [product.id, product.quantity_step, product.sale_type, product.stock])
 
   useEffect(() => {
     if (product.stock <= 0) return
     setQuantity((q) => {
-      if (q === "") return q
-      const n = typeof q === "number" && Number.isFinite(q) ? q : 1
-      return Math.min(Math.max(0, n), product.stock)
+      const p = withCommercialDefaults(product)
+      const max = getMaxValidQuantity(p)
+      if (max <= 0) return initialQuantityForProduct(p)
+      return clampValidQuantity(typeof q === "number" ? q : initialQuantityForProduct(p), p)
     })
-  }, [product.stock])
-
-  const stockStatus = getStockStatus(product.stock)
-  const isOutOfStock = product.stock === 0
+  }, [product.stock, product.quantity_step, product.sale_type])
 
   const handleImageError = () => {
     const primary = product.image?.trim() || ""
@@ -93,47 +102,26 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
   const handleAdd = () => {
     if (isOutOfStock) return
-    const q = toNumericQty(quantity)
-    if (quantity === "" || !Number.isFinite(q) || q <= 0) {
-      setQtyError("Indica una cantidad mayor a 0.")
+    const p = withCommercialDefaults(product)
+    const finalQty = clampValidQuantity(quantity, p)
+    if (finalQty !== quantity) {
+      setQuantity(finalQty)
+      setQtyError("Cantidad ajustada al múltiplo permitido")
       return
     }
-    if (q > product.stock) {
-      setQtyError(`Máximo ${product.stock} unidades disponibles.`)
+    const step = p.quantity_step ?? 1
+    if (!isValidQuantity(finalQty, step)) {
+      setQtyError(`Debes comprar en múltiplos de ${step} unidades.`)
+      return
+    }
+    if (finalQty > product.stock) {
+      setQtyError(`Máximo ${getMaxValidQuantity(p)} unidades disponibles.`)
       return
     }
     setQtyError("")
-    onAddToCart(product, q)
-    setQuantity(1)
+    onAddToCart(p, finalQty)
+    setQuantity(initialQuantityForProduct(p))
   }
-
-  const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setQtyError("")
-    const val = e.target.value
-    if (val === "") {
-      setQuantity("")
-      return
-    }
-    setQuantity(Number(val))
-  }
-
-  const incrementQuantity = () => {
-    if (isOutOfStock) return
-    setQtyError("")
-    const base = quantity === "" ? 0 : quantity
-    const next = base + 1
-    setQuantity(Math.min(next, product.stock))
-  }
-
-  const decrementQuantity = () => {
-    if (isOutOfStock) return
-    setQtyError("")
-    const base = quantity === "" ? 0 : quantity
-    setQuantity(Math.max(0, base - 1))
-  }
-
-  const numericForButtons = toNumericQty(quantity)
-  const maxQty = Math.max(0, product.stock)
 
   return (
     <div className="bg-card text-card-foreground rounded-xl shadow-sm border border-border overflow-hidden flex flex-col h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-border dark:hover:border-zinc-600 dark:hover:shadow-xl dark:hover:shadow-black/35">
@@ -181,6 +169,10 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           {product.name}
         </h3>
 
+        <p className="text-xs text-muted-foreground mt-1.5 leading-snug">
+          {saleRuleLabel}
+        </p>
+
         <div className="mt-auto pt-3 space-y-1">
           {product.barcode ? (
             <p
@@ -195,43 +187,19 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </p>
         </div>
 
+        {stockInsufficient && product.stock > 0 ? (
+          <p className="text-xs text-destructive mt-2 text-center">
+            {getStockInsufficientMessage(commercial)}
+          </p>
+        ) : null}
+
         <div className="mt-3 flex items-center gap-2 min-w-0">
-          <div className="flex items-stretch border border-border rounded-md bg-background min-w-0 flex-1 max-w-[220px] sm:max-w-[240px] overflow-hidden">
-            <button
-              type="button"
-              onClick={decrementQuantity}
-              disabled={isOutOfStock || quantity === "" || numericForButtons <= 0}
-              className="flex items-center justify-center p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-
-            <div className="flex flex-1 min-w-0 min-h-10 items-center justify-center self-stretch">
-              <Input
-                type="number"
-                min={0}
-                max={maxQty}
-                disabled={isOutOfStock}
-                value={quantity === "" ? "" : quantity}
-                onChange={handleQuantityChange}
-                className="h-10 w-full min-w-[60px] sm:min-w-[70px] max-w-[5.5rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 rounded-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                aria-label="Cantidad"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={incrementQuantity}
-              disabled={
-                isOutOfStock ||
-                (Number.isFinite(numericForButtons) &&
-                  numericForButtons >= product.stock)
-              }
-              className="flex items-center justify-center p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          </div>
+          <SecQuantityControl
+            product={commercial}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            disabled={isOutOfStock}
+          />
 
           <Button
             onClick={handleAdd}

@@ -1,3 +1,5 @@
+export type SaleType = "ENTERA" | "PARCIAL" | "UNITARIO"
+
 export interface Product {
   id: number
   name: string
@@ -11,6 +13,9 @@ export interface Product {
   imageFromApi?: boolean
   /** Valor crudo de `image` en la API (antes de resolver URL), para heurísticas. */
   catalogImageRaw?: string
+  units_per_box?: number | null
+  sale_type?: SaleType | null
+  quantity_step?: number | null
 }
 
 export interface ClientSession {
@@ -22,6 +27,7 @@ export interface ClientSession {
   city: string
   is_melinka: boolean
   isTestMode?: boolean
+  is_catalog_admin?: boolean
 }
 
 export interface CartItem {
