@@ -121,6 +121,33 @@ export default function CatalogPage() {
     [productsForList, clientFilters]
   )
 
+  const renderedProducts = filteredProducts
+
+  useEffect(() => {
+    console.log({
+      searchQuery,
+      productsForList: productsForList.length,
+      filteredProducts: filteredProducts.length,
+      selectedCategory,
+      stockFilter,
+    })
+    console.log(
+      "Primeros productos renderizados",
+      renderedProducts.slice(0, 10).map((p) => p.name)
+    )
+    console.log(
+      "Primeros IDs renderizados",
+      renderedProducts.slice(0, 10).map((p) => p.id)
+    )
+  }, [
+    searchQuery,
+    productsForList,
+    filteredProducts,
+    renderedProducts,
+    selectedCategory,
+    stockFilter,
+  ])
+
   const handleAddToCart = (product: Product, quantity: number) => {
     const updatedCart = addToCart(product, quantity)
     setCart(updatedCart)
