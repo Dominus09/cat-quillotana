@@ -1,11 +1,16 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { X, Trash2, ShoppingBag } from "lucide-react"
 import { SecQuantityControl } from "@/components/sec-quantity-control"
 import { getSaleRuleLabel, withCommercialDefaults } from "@/lib/sale-quantity"
+import {
+  buildProductKeyContext,
+  getProductReactKey,
+} from "@/lib/product-key"
 import type { CartItem } from "@/types/catalog"
 
 interface CartPanelProps {
@@ -48,6 +53,11 @@ export function CartPanel({
   )
 
   const itemCount = items.reduce((count, item) => count + item.quantity, 0)
+
+  const cartKeyContext = useMemo(
+    () => buildProductKeyContext(items.map((item) => item.product)),
+    [items]
+  )
 
   const handleContinueOrder = () => {
     onClose()
@@ -92,12 +102,12 @@ export function CartPanel({
             </div>
           ) : (
             <div className="space-y-4">
-              {items.map((item) => {
+              {items.map((item, index) => {
                 const product = withCommercialDefaults(item.product)
                 const subtotal = product.price * item.quantity
                 return (
                   <div
-                    key={item.product.id}
+                    key={getProductReactKey(item.product, index, cartKeyContext)}
                     className="flex gap-3 p-3 bg-muted rounded-lg"
                   >
                     <div className="w-16 h-16 rounded-md bg-neutral-100 overflow-hidden flex-shrink-0 ring-1 ring-black/[0.05] dark:bg-zinc-800 dark:ring-white/[0.08] dark:shadow-[inset_0_0_12px_rgba(0,0,0,0.25)]">

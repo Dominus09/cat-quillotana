@@ -27,6 +27,10 @@ import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/l
 import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
 import { filterProductsForPriceList, filterCatalogProducts } from "@/lib/catalog-filters"
 import {
+  buildProductKeyContext,
+  getProductReactKey,
+} from "@/lib/product-key"
+import {
   CatalogActiveFilters,
   getCatalogResultsLabel,
 } from "@/components/catalog-active-filters"
@@ -121,32 +125,10 @@ export default function CatalogPage() {
     [productsForList, clientFilters]
   )
 
-  const renderedProducts = filteredProducts
-
-  useEffect(() => {
-    console.log({
-      searchQuery,
-      productsForList: productsForList.length,
-      filteredProducts: filteredProducts.length,
-      selectedCategory,
-      stockFilter,
-    })
-    console.log(
-      "Primeros productos renderizados",
-      renderedProducts.slice(0, 10).map((p) => p.name)
-    )
-    console.log(
-      "Primeros IDs renderizados",
-      renderedProducts.slice(0, 10).map((p) => p.id)
-    )
-  }, [
-    searchQuery,
-    productsForList,
-    filteredProducts,
-    renderedProducts,
-    selectedCategory,
-    stockFilter,
-  ])
+  const productKeyContext = useMemo(
+    () => buildProductKeyContext(filteredProducts),
+    [filteredProducts]
+  )
 
   const handleAddToCart = (product: Product, quantity: number) => {
     const updatedCart = addToCart(product, quantity)
@@ -310,9 +292,9 @@ export default function CatalogPage() {
             {/* Product Grid */}
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((product, index) => (
                   <ProductCard
-                    key={product.id}
+                    key={getProductReactKey(product, index, productKeyContext)}
                     product={product}
                     onAddToCart={handleAddToCart}
                   />
