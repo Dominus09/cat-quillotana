@@ -25,7 +25,11 @@ import {
 } from "@/lib/session"
 import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
 import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
-import { filterProductsForPriceList } from "@/lib/catalog-filters"
+import { filterProductsForPriceList, filterCatalogProducts } from "@/lib/catalog-filters"
+import {
+  CatalogActiveFilters,
+  getCatalogResultsLabel,
+} from "@/components/catalog-active-filters"
 import {
   RUT_MISSING_PHOTO_EXPORT_TOOL,
   rutEqualsNormalized,
@@ -62,10 +66,16 @@ export default function CatalogPage() {
   )
 
   const clearCatalogFilters = useCallback(() => {
+    setSearchQuery("")
     setSelectedCategory(null)
     setStockFilter("all")
     setApiInStockOnly(true)
   }, [])
+
+  const clientFilters = useMemo(
+    () => ({ searchQuery, selectedCategory, stockFilter }),
+    [searchQuery, selectedCategory, stockFilter]
+  )
 
   const missingPhotoCount = useMemo(() => {
     if (!showMissingPhotoExport) return 0
@@ -106,34 +116,10 @@ export default function CatalogPage() {
     return Array.from(types).sort()
   }, [productsForList])
 
-  // Filter products
-  const filteredProducts = useMemo(() => {
-    let filtered = productsForList
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.type.toLowerCase().includes(query)
-      )
-    }
-
-    // Category filter
-    if (selectedCategory) {
-      filtered = filtered.filter((p) => p.type === selectedCategory)
-    }
-
-    // Stock filter
-    if (stockFilter === "available") {
-      filtered = filtered.filter((p) => p.stock > 10)
-    } else if (stockFilter === "low") {
-      filtered = filtered.filter((p) => p.stock > 0 && p.stock <= 10)
-    }
-
-    return filtered
-  }, [productsForList, searchQuery, selectedCategory, stockFilter])
+  const filteredProducts = useMemo(
+    () => filterCatalogProducts(productsForList, clientFilters),
+    [productsForList, clientFilters]
+  )
 
   const handleAddToCart = (product: Product, quantity: number) => {
     const updatedCart = addToCart(product, quantity)
@@ -225,7 +211,7 @@ export default function CatalogPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex gap-6">
           {/* Filters Sidebar */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
+          <div className="hidden lg:block w-[240px] max-w-[260px] flex-shrink-0">
             <FiltersSidebar
               categories={categories}
               selectedCategory={selectedCategory}
@@ -237,6 +223,7 @@ export default function CatalogPage() {
               isOpen={filtersOpen}
               onClose={() => setFiltersOpen(false)}
               isMobileDrawer={false}
+              onClearFilters={clearCatalogFilters}
             />
           </div>
 
@@ -258,10 +245,18 @@ export default function CatalogPage() {
               </Button>
             </div>
 
+            <CatalogActiveFilters
+              filters={clientFilters}
+              onSearchChange={setSearchQuery}
+              onCategoryChange={setSelectedCategory}
+              onStockFilterChange={setStockFilter}
+              onClearAll={clearCatalogFilters}
+            />
+
             {/* Products Count */}
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
-                {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""} encontrado{filteredProducts.length !== 1 ? "s" : ""}
+                {getCatalogResultsLabel(filteredProducts.length, clientFilters)}
               </p>
               {showMissingPhotoExport ? (
                 <Button
@@ -306,16 +301,11 @@ export default function CatalogPage() {
                   className="mx-auto opacity-30 mb-4"
                 />
                 <p className="text-muted-foreground">
-                  No se encontraron productos con los filtros seleccionados.
+                  No encontramos productos con estos filtros
                 </p>
                 <Button
                   variant="link"
-                  onClick={() => {
-                    setSearchQuery("")
-                    setSelectedCategory(null)
-                    setStockFilter("all")
-                    setApiInStockOnly(true)
-                  }}
+                  onClick={clearCatalogFilters}
                   className="text-primary mt-2"
                 >
                   Limpiar filtros

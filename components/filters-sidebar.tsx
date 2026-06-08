@@ -176,7 +176,7 @@ export function FiltersSidebar({
       <aside
         className={cn(
           "fixed top-0 left-0 h-full bg-card text-card-foreground border-r border-border z-50 flex flex-col shadow-lg transition-transform duration-300 lg:relative lg:shadow-none lg:max-h-none",
-          "w-[min(100vw,20rem)] sm:max-w-sm lg:w-64",
+          "w-[min(100vw,20rem)] sm:max-w-sm lg:w-[240px] lg:max-w-[260px]",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -212,14 +212,25 @@ export function FiltersSidebar({
               type="button"
               variant="outline"
               className="w-full h-11"
-              onClick={() => {
-                handleClear()
-              }}
+              onClick={handleClear}
             >
-              Limpiar
+              Limpiar filtros
             </Button>
           </div>
         )}
+
+        {!isMobileDrawer && onClearFilters ? (
+          <div className="hidden lg:block shrink-0 border-t border-border p-4 pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-9 text-sm"
+              onClick={handleClear}
+            >
+              Limpiar filtros
+            </Button>
+          </div>
+        ) : null}
       </aside>
     </>
   )

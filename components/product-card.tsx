@@ -187,28 +187,31 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </p>
         </div>
 
-        {stockInsufficient && product.stock > 0 ? (
-          <p className="text-xs text-destructive mt-2 text-center">
-            {getStockInsufficientMessage(commercial)}
-          </p>
-        ) : null}
-
-        <div className="mt-3 flex items-center gap-2 min-w-0">
-          <SecQuantityControl
-            product={commercial}
-            quantity={quantity}
-            onQuantityChange={setQuantity}
-            disabled={isOutOfStock}
-          />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex-1 min-w-[8.5rem] basis-[8.5rem]">
+            <SecQuantityControl
+              product={commercial}
+              quantity={quantity}
+              onQuantityChange={setQuantity}
+              disabled={isOutOfStock}
+              feedbackMessage={
+                stockInsufficient && product.stock > 0
+                  ? getStockInsufficientMessage(commercial)
+                  : undefined
+              }
+              showAdjustHint
+              containerClassName="flex items-stretch border border-border rounded-md bg-background w-full max-w-none overflow-hidden"
+            />
+          </div>
 
           <Button
             onClick={handleAdd}
             disabled={isOutOfStock}
             size="sm"
-            className="flex-1 bg-[#E30613] text-white font-semibold rounded-md hover:bg-[#c90510] min-w-0"
+            className="basis-full flex-1 min-w-[5.5rem] bg-[#E30613] text-white font-semibold rounded-md hover:bg-[#c90510] shrink-0 whitespace-nowrap"
           >
-            <ShoppingCart className="w-4 h-4 mr-1 shrink-0" />
-            <span className="hidden sm:inline">Agregar</span>
+            <ShoppingCart className="w-4 h-4 mr-1.5 shrink-0" />
+            Agregar
           </Button>
         </div>
 

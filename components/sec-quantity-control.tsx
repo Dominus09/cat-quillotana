@@ -27,6 +27,8 @@ export interface SecQuantityControlProps {
   quantity: QuantityValue
   onQuantityChange: (quantity: number) => void
   disabled?: boolean
+  /** Mensaje cuando no hay stock suficiente para el mínimo de venta */
+  feedbackMessage?: string
   /** Muestra aviso cuando se corrige cantidad manual inválida */
   showAdjustHint?: boolean
   inputClassName?: string
@@ -38,6 +40,7 @@ export function SecQuantityControl({
   quantity,
   onQuantityChange,
   disabled = false,
+  feedbackMessage,
   showAdjustHint = false,
   inputClassName,
   containerClassName,
@@ -147,6 +150,12 @@ export function SecQuantityControl({
           <Plus className="w-3 h-3" />
         </button>
       </div>
+
+      {feedbackMessage ? (
+        <p className="text-[11px] text-destructive mt-1 leading-snug">
+          {feedbackMessage}
+        </p>
+      ) : null}
 
       {showAdjustHint && adjustHint ? (
         <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1">{adjustHint}</p>
