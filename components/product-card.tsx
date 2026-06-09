@@ -9,6 +9,7 @@ import {
   canAddProductToCart,
   clampValidQuantity,
   getMaxValidQuantity,
+  getMinQuantity,
   getSaleRuleLabel,
   getStockInsufficientMessage,
   isValidQuantity,
@@ -27,6 +28,7 @@ interface ProductCardProps {
 
 const PLACEHOLDER_WEBP = "/placeholder2.webp"
 const FALLBACK_SEAL = LOGO_SEAL_SRC
+const DEBUG_BARCODE = "6972229786055"
 
 function getStockStatus(stock: number) {
   if (stock === 0) {
@@ -73,9 +75,23 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   }, [product.id, product.image])
 
   useEffect(() => {
-    setQuantity(initialQuantityForProduct(withCommercialDefaults(product)))
+    const p = withCommercialDefaults(product)
+    setQuantity(initialQuantityForProduct(p))
     setQtyError("")
-  }, [product.id, product.quantity_step, product.sale_type, product.stock])
+  }, [product.id, product.quantity_step, product.sale_type, product.stock, product.type])
+
+  useEffect(() => {
+    if (product.barcode?.trim() !== DEBUG_BARCODE) return
+    const p = withCommercialDefaults(product)
+    console.log("[ProductCard SEC debug]", {
+      name: p.name,
+      type: p.type,
+      units_per_box: p.units_per_box,
+      sale_type: p.sale_type,
+      quantity_step: p.quantity_step,
+      initialQuantity: getMinQuantity(p),
+    })
+  }, [product])
 
   useEffect(() => {
     if (product.stock <= 0) return
@@ -85,7 +101,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       if (max <= 0) return initialQuantityForProduct(p)
       return clampValidQuantity(typeof q === "number" ? q : initialQuantityForProduct(p), p)
     })
-  }, [product.stock, product.quantity_step, product.sale_type])
+  }, [product.stock, product.quantity_step, product.sale_type, product.type])
 
   const handleImageError = () => {
     const primary = product.image?.trim() || ""
@@ -124,8 +140,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   }
 
   return (
-    <div className="bg-card text-card-foreground rounded-xl shadow-sm border border-border overflow-hidden flex flex-col h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-border dark:hover:border-zinc-600 dark:hover:shadow-xl dark:hover:shadow-black/35">
-      <div className="relative h-40 bg-muted border-b border-border dark:bg-zinc-950 dark:border-zinc-800/60">
+    <article className="bg-card text-card-foreground rounded-xl shadow-sm border border-border overflow-hidden flex flex-col h-full min-h-[22rem] transition-shadow duration-200 hover:shadow-md dark:hover:border-zinc-600">
+      <div className="relative h-36 shrink-0 bg-muted border-b border-border dark:bg-zinc-950 dark:border-zinc-800/60">
         {imageBroken ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 dark:bg-zinc-950">
             <Image
@@ -137,13 +153,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             />
           </div>
         ) : (
-          <div className="absolute inset-2 rounded-lg overflow-hidden bg-neutral-50/90 ring-1 ring-black/[0.04] dark:inset-1.5 dark:rounded-md dark:bg-gradient-to-b dark:from-zinc-800/35 dark:via-zinc-900/25 dark:to-zinc-950 dark:ring-white/[0.06] dark:shadow-[inset_0_1px_24px_rgba(0,0,0,0.28)]">
+          <div className="absolute inset-2 rounded-lg overflow-hidden bg-neutral-50/90 ring-1 ring-black/[0.04] dark:inset-1.5 dark:rounded-md dark:bg-gradient-to-b dark:from-zinc-800/35 dark:via-zinc-900/25 dark:to-zinc-950 dark:ring-white/[0.06]">
             <Image
               key={displaySrc}
               src={displaySrc}
               alt={product.name}
               fill
-              className="object-contain p-2 dark:p-1.5 dark:brightness-[0.93] dark:contrast-[1.04] dark:saturate-[0.98]"
+              className="object-contain p-2 dark:p-1.5"
               onError={handleImageError}
               loading="lazy"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -153,72 +169,74 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         <div className="absolute top-2 right-2">
           <span
-            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${stockStatus.badgeClass}`}
+            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${stockStatus.badgeClass}`}
           >
             {stockStatus.label}
           </span>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
-        <p className="text-xs uppercase text-muted-foreground tracking-wide line-clamp-2">
+      <div className="flex flex-col flex-1 min-h-0 p-3 gap-1">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground line-clamp-1 shrink-0">
           {product.type}
         </p>
 
-        <h3 className="font-semibold text-foreground text-sm mt-1 line-clamp-2">
+        <h3
+          className="font-semibold text-foreground text-sm leading-snug line-clamp-3 min-h-[3.75rem] shrink-0"
+          title={product.name}
+        >
           {product.name}
         </h3>
 
-        <p className="text-xs text-muted-foreground mt-1.5 leading-snug">
+        <p className="text-xs text-muted-foreground leading-snug shrink-0">
           {saleRuleLabel}
         </p>
 
-        <div className="mt-auto pt-3 space-y-1">
+        <div className="mt-auto pt-2 flex flex-col gap-2 min-w-0">
           {product.barcode ? (
             <p
-              className="text-[10px] leading-tight text-muted-foreground font-mono tabular-nums break-all line-clamp-2"
+              className="text-[9px] leading-tight text-muted-foreground/80 font-mono tabular-nums truncate"
               title={product.barcode}
             >
               {product.barcode}
             </p>
           ) : null}
-          <p className="text-lg font-bold text-red-600 dark:text-red-400">
+
+          <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums">
             ${product.price.toLocaleString("es-CL")}
           </p>
-        </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <div className="flex-1 min-w-[8.5rem] basis-[8.5rem]">
-            <SecQuantityControl
-              product={commercial}
-              quantity={quantity}
-              onQuantityChange={setQuantity}
-              disabled={isOutOfStock}
-              feedbackMessage={
-                stockInsufficient && product.stock > 0
-                  ? getStockInsufficientMessage(commercial)
-                  : undefined
-              }
-              showAdjustHint
-              containerClassName="flex items-stretch border border-border rounded-md bg-background w-full max-w-none overflow-hidden"
-            />
-          </div>
+          <SecQuantityControl
+            product={commercial}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            disabled={isOutOfStock}
+            feedbackMessage={
+              stockInsufficient && product.stock > 0
+                ? getStockInsufficientMessage(commercial)
+                : undefined
+            }
+            showAdjustHint
+            containerClassName="flex items-stretch border border-border rounded-md bg-background w-full overflow-hidden"
+          />
 
           <Button
             onClick={handleAdd}
             disabled={isOutOfStock}
             size="sm"
-            className="basis-full flex-1 min-w-[5.5rem] bg-[#E30613] text-white font-semibold rounded-md hover:bg-[#c90510] shrink-0 whitespace-nowrap"
+            className="w-full h-9 bg-[#E30613] text-white font-semibold rounded-md hover:bg-[#c90510] whitespace-nowrap"
           >
             <ShoppingCart className="w-4 h-4 mr-1.5 shrink-0" />
             Agregar
           </Button>
-        </div>
 
-        {qtyError ? (
-          <p className="text-xs text-destructive mt-1.5 text-center">{qtyError}</p>
-        ) : null}
+          {qtyError ? (
+            <p className="text-[11px] text-destructive text-center leading-snug">
+              {qtyError}
+            </p>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </article>
   )
 }

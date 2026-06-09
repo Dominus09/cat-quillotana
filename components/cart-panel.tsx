@@ -155,7 +155,7 @@ export function CartPanel({
                         </button>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <div className="flex flex-col gap-2 mt-1">
                         <SecQuantityControl
                           product={product}
                           quantity={item.quantity}
@@ -164,8 +164,8 @@ export function CartPanel({
                           }
                           disabled={product.stock <= 0}
                           showAdjustHint
-                          containerClassName="flex items-stretch border border-border rounded-md bg-card overflow-hidden max-w-[200px]"
-                          inputClassName="h-9 min-w-[60px] w-16 sm:min-w-[70px] sm:w-20 max-w-[5.5rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          containerClassName="flex items-stretch border border-border rounded-md bg-card overflow-hidden w-full max-w-none"
+                          inputClassName="h-9 w-full min-w-[3rem] border-0 text-center text-sm font-semibold tabular-nums px-2 shadow-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                       </div>
 

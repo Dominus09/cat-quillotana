@@ -1,6 +1,57 @@
 import type { CartItem, Product, SaleType } from "@/types/catalog"
+import { normalizeCatalogCategoryType } from "@/lib/catalog-filters"
 
 const VALID_SALE_TYPES = new Set<SaleType>(["ENTERA", "PARCIAL", "UNITARIO"])
+
+const PET_FOOD_CATEGORY = normalizeCatalogCategoryType("alimento mascotas")
+
+function parseOptionalPositiveInt(raw: unknown): number | null {
+  if (raw == null || raw === "") return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.floor(n)
+}
+
+/** Extrae SEC del nombre, p. ej. "(SEC 10)" → 10 */
+export function parseSecFromProductName(name: string): number | null {
+  const match = name.match(/\(SEC\s*(\d+)\s*\)/i)
+  return match ? parseOptionalPositiveInt(match[1]) : null
+}
+
+function isPetFoodCategory(type: string): boolean {
+  return normalizeCatalogCategoryType(type) === PET_FOOD_CATEGORY
+}
+
+/**
+ * Algunos alimentos mascota vienen como ENTERA/step=SEC en API pero se venden
+ * PARCIAL (mínimo SEC/2). Normaliza sin tocar backend.
+ */
+function applyPetFoodPartialOverride(product: Product): Product {
+  if (!isPetFoodCategory(product.type)) return product
+
+  const units_per_box = parseOptionalPositiveInt(product.units_per_box)
+  const sale_type = product.sale_type ? parseSaleType(product.sale_type) : "UNITARIO"
+  const quantity_step = parseOptionalPositiveInt(product.quantity_step) ?? 1
+
+  if (
+    sale_type !== "ENTERA" ||
+    units_per_box == null ||
+    units_per_box < 2 ||
+    quantity_step !== units_per_box
+  ) {
+    return product
+  }
+
+  const sec = parseSecFromProductName(product.name) ?? units_per_box
+  if (sec < 2 || sec % 2 !== 0) return product
+
+  return {
+    ...product,
+    sale_type: "PARCIAL",
+    quantity_step: sec / 2,
+    units_per_box: sec,
+  }
+}
 
 export function parseSaleType(raw: unknown): SaleType {
   const key = String(raw ?? "")
@@ -10,22 +61,19 @@ export function parseSaleType(raw: unknown): SaleType {
   return "UNITARIO"
 }
 
-function parseOptionalPositiveInt(raw: unknown): number | null {
-  if (raw == null || raw === "") return null
-  const n = Number(raw)
-  if (!Number.isFinite(n) || n <= 0) return null
-  return Math.floor(n)
-}
-
 /** Aplica defaults comerciales (p. ej. ítems de carrito legacy). */
 export function withCommercialDefaults(product: Product): Product {
-  const units_per_box = parseOptionalPositiveInt(product.units_per_box)
-  const sale_type = product.sale_type ? parseSaleType(product.sale_type) : "UNITARIO"
-  let quantity_step = parseOptionalPositiveInt(product.quantity_step) ?? 1
+  const normalized = applyPetFoodPartialOverride(product)
+  const units_per_box = parseOptionalPositiveInt(normalized.units_per_box)
+  const sale_type = normalized.sale_type
+    ? parseSaleType(normalized.sale_type)
+    : "UNITARIO"
+  let quantity_step =
+    parseOptionalPositiveInt(normalized.quantity_step) ?? 1
   if (sale_type === "UNITARIO") quantity_step = 1
 
   return {
-    ...product,
+    ...normalized,
     units_per_box,
     sale_type,
     quantity_step,
