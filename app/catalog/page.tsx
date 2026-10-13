@@ -25,7 +25,9 @@ import {
 } from "@/lib/session"
 import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
 import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
-import { filterProductsForPriceList, filterCatalogProducts } from "@/lib/catalog-filters"
+import { filterCatalogProducts } from "@/lib/catalog-filters"
+import { useCartPriceSync } from "@/hooks/use-cart-price-sync"
+import { CartPriceNotice } from "@/components/cart-price-notice"
 import {
   buildProductKeyContext,
   getProductReactKey,
@@ -52,12 +54,9 @@ export default function CatalogPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  const { products, isLoading, error } = useCatalog(apiInStockOnly)
-
-  const productsForList = useMemo(
-    () => filterProductsForPriceList(products, session?.price_list),
-    [products, session?.price_list]
-  )
+  const { products: productsForList, isLoading, error } = useCatalog(apiInStockOnly)
+  const cartPriceNotice = useCartPriceSync(session?.price_list, setCart)
+  const [noticeDismissed, setNoticeDismissed] = useState(false)
 
   const showMissingPhotoExport = useMemo(
     () => rutEqualsNormalized(session?.rut, RUT_MISSING_PHOTO_EXPORT_TOOL),
@@ -104,10 +103,6 @@ export default function CatalogPage() {
     const clientSession = getSession()
     if (!clientSession) {
       router.push("/")
-      return
-    }
-    if (!clientSession.price_list?.trim()) {
-      router.push("/select-price-list")
       return
     }
     setSession(clientSession)
@@ -253,6 +248,13 @@ export default function CatalogPage() {
                 Filtrar
               </Button>
             </div>
+
+            {cartPriceNotice && !noticeDismissed ? (
+              <CartPriceNotice
+                notice={cartPriceNotice}
+                onDismiss={() => setNoticeDismissed(true)}
+              />
+            ) : null}
 
             <CatalogActiveFilters
               filters={clientFilters}

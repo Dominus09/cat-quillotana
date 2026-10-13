@@ -21,7 +21,7 @@ export interface Product {
 export interface ClientSession {
   client_id: number
   name: string
-  /** Solo tras elegir factura/comoditi o si es cliente Melinka ("melinka"). */
+  /** Resuelta por ciudad: "melinka" (lista 16) o "factura" (Ruta/Web, lista 13). */
   price_list?: string
   rut: string
   city: string

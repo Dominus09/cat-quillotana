@@ -19,15 +19,22 @@ import { LoadingScreen } from "@/components/loading-screen"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   getSession,
+  setSession as saveSession,
   getCart,
   getCartTotal,
   clearCart,
+  cartNeedsReprice,
 } from "@/lib/session"
 import { LOGO_MAIN_SRC } from "@/lib/branding-assets"
-import { createOrder } from "@/services/api"
+import { createOrder, OrderRepriceRequiredError } from "@/services/api"
 import { buildOrderSuccessMeta, saveOrderSuccessMeta } from "@/lib/order-success"
 import { validateCartForCheckout } from "@/lib/sale-quantity"
 import { OrderCommercialSummary } from "@/components/order-commercial-summary"
+import { CartPriceNotice } from "@/components/cart-price-notice"
+import {
+  syncCartWithPriceList,
+  type CartPriceNoticeData,
+} from "@/hooks/use-cart-price-sync"
 import type { CartItem } from "@/types/catalog"
 
 export default function CheckoutPage() {
@@ -46,6 +53,10 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [quantityErrors, setQuantityErrors] = useState<string[]>([])
+  const [repriceNotice, setRepriceNotice] = useState<{
+    title: string
+    notice: CartPriceNoticeData
+  } | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -54,12 +65,8 @@ export default function CheckoutPage() {
       router.replace("/")
       return
     }
-    if (!s.price_list?.trim()) {
-      router.replace("/select-price-list")
-      return
-    }
     const c = getCart()
-    if (c.length === 0) {
+    if (c.length === 0 || cartNeedsReprice(s.price_list)) {
       router.replace("/catalog")
       return
     }
@@ -69,10 +76,47 @@ export default function CheckoutPage() {
 
   const total = useMemo(() => getCartTotal(cart), [cart])
 
+  const handleRepriceRequired = async (err: OrderRepriceRequiredError) => {
+    if (!session) return
+    let priceList = session.price_list ?? ""
+    if (err.reason === "price_list_mismatch") {
+      if (!err.expectedPriceList) {
+        setError(err.message)
+        return
+      }
+      const updated = {
+        ...session,
+        is_melinka: err.expectedPriceList === "melinka",
+        price_list: err.expectedPriceList,
+      }
+      saveSession(updated)
+      setSession(updated)
+      priceList = err.expectedPriceList
+    }
+
+    try {
+      const result = await syncCartWithPriceList(priceList)
+      if (result.cart.length === 0) {
+        router.replace("/catalog")
+        return
+      }
+      setCart(result.cart)
+      setRepriceNotice({
+        title: err.message,
+        notice: { changed: result.changed, removed: result.removed },
+      })
+    } catch {
+      setError(
+        "No pudimos actualizar los precios. Vuelve al catálogo e intenta nuevamente."
+      )
+    }
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError("")
     setQuantityErrors([])
+    setRepriceNotice(null)
 
     if (submitting) return
 
@@ -106,6 +150,11 @@ export default function CheckoutPage() {
 
     if (!session) {
       setError("Sesión no válida. Vuelve a iniciar sesión.")
+      return
+    }
+
+    if (cartNeedsReprice(session.price_list)) {
+      router.replace("/catalog")
       return
     }
 
@@ -156,6 +205,10 @@ export default function CheckoutPage() {
           : ""
       router.push(`/success${q}`)
     } catch (err) {
+      if (err instanceof OrderRepriceRequiredError) {
+        await handleRepriceRequired(err)
+        return
+      }
       setError(
         err instanceof Error ? err.message : "Error al generar pedido"
       )
@@ -204,6 +257,15 @@ export default function CheckoutPage() {
             enviará la orden de compra definitiva con precios actualizados.
           </p>
         </div>
+
+        {repriceNotice ? (
+          <CartPriceNotice
+            notice={repriceNotice.notice}
+            title={repriceNotice.title}
+            footer="Revisa el nuevo total y presiona «Generar pedido» para confirmar."
+            onDismiss={() => setRepriceNotice(null)}
+          />
+        ) : null}
 
         <div className="bg-card rounded-xl border border-border p-4 mb-6 space-y-2 text-sm">
           <p className="font-medium text-foreground">

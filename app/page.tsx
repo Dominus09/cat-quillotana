@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LOGO_MAIN_SRC, LOGO_SEAL_SRC } from "@/lib/branding-assets"
 import { setSession } from "@/lib/session"
+import { resolvePriceListForClient } from "@/lib/price-list"
 import { loginClient } from "@/services/api"
 import type { ClientSession } from "@/types/catalog"
 
@@ -53,40 +54,29 @@ export default function LoginPage() {
         rut: "test",
         city: "",
         is_melinka: false,
+        price_list: resolvePriceListForClient({ is_melinka: false }),
         isTestMode: true,
       }
       setSession(testSession)
       setLoading(false)
-      router.push("/select-price-list")
+      router.push("/catalog")
       return
     }
 
     try {
       const data = await loginClient(trimmed)
-      if (data.is_melinka) {
-        const session: ClientSession = {
-          client_id: data.id,
-          name: data.name,
-          rut: trimmed,
-          city: data.city,
-          is_melinka: true,
-          price_list: "melinka",
-          is_catalog_admin: data.is_catalog_admin === true,
-        }
-        setSession(session)
-        router.push("/catalog")
-      } else {
-        const session: ClientSession = {
-          client_id: data.id,
-          name: data.name,
-          rut: trimmed,
-          city: data.city,
-          is_melinka: false,
-          is_catalog_admin: data.is_catalog_admin === true,
-        }
-        setSession(session)
-        router.push("/select-price-list")
+      const is_melinka = data.is_melinka === true
+      const session: ClientSession = {
+        client_id: data.id,
+        name: data.name,
+        rut: trimmed,
+        city: data.city,
+        is_melinka,
+        price_list: resolvePriceListForClient({ is_melinka }),
+        is_catalog_admin: data.is_catalog_admin === true,
       }
+      setSession(session)
+      router.push("/catalog")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión")
     } finally {

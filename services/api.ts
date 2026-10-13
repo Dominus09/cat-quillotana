@@ -1,4 +1,5 @@
 import { parseSaleType } from "@/lib/sale-quantity"
+import { isValidCatalogPriceList, type CatalogPriceList } from "@/lib/price-list"
 import type { Product, SaleType } from "@/types/catalog"
 
 const API_URL = (
@@ -157,6 +158,9 @@ export async function getCatalog(
   price_list: string,
   in_stock?: boolean
 ): Promise<Product[]> {
+  if (!isValidCatalogPriceList(price_list)) {
+    throw new Error(`Lista de precios no válida: ${price_list}`)
+  }
   const params = new URLSearchParams({ price_list })
   if (in_stock) {
     params.set("in_stock", "true")
@@ -212,9 +216,48 @@ export type CreateOrderResponse = Record<string, unknown> & {
   client?: { name?: string; city?: string; ciudad?: string }
 }
 
+/**
+ * El backend no creó el pedido porque los precios, el total o la lista no coinciden
+ * con los vigentes. El carrito debe actualizarse y el cliente confirmar de nuevo.
+ */
+export class OrderRepriceRequiredError extends Error {
+  readonly reason: "price_mismatch" | "price_list_mismatch"
+  readonly expectedPriceList: CatalogPriceList | null
+
+  constructor(
+    message: string,
+    reason: OrderRepriceRequiredError["reason"],
+    expectedPriceList: CatalogPriceList | null
+  ) {
+    super(message)
+    this.name = "OrderRepriceRequiredError"
+    this.reason = reason
+    this.expectedPriceList = expectedPriceList
+  }
+}
+
+function parseRepriceRequired(body: unknown): OrderRepriceRequiredError | null {
+  if (!body || typeof body !== "object") return null
+  const detail = (body as Record<string, unknown>).detail
+  if (!detail || typeof detail !== "object" || Array.isArray(detail)) return null
+  const d = detail as Record<string, unknown>
+  if (d.error !== "price_mismatch" && d.error !== "price_list_mismatch") return null
+  const message =
+    typeof d.message === "string" && d.message.trim()
+      ? d.message.trim()
+      : "Los precios de tu carrito cambiaron. Revisa el total y confirma nuevamente."
+  const expected = isValidCatalogPriceList(d.expected_price_list)
+    ? d.expected_price_list
+    : null
+  return new OrderRepriceRequiredError(message, d.error, expected)
+}
+
 export async function createOrder(
   orderData: CreateOrderPayload
 ): Promise<CreateOrderResponse> {
+  if (!isValidCatalogPriceList(orderData.price_list)) {
+    throw new Error("Lista de precios no válida. Vuelve a iniciar sesión.")
+  }
   const res = await fetch(`${API_URL}/orders`, {
     method: "POST",
     headers: {
@@ -225,13 +268,18 @@ export async function createOrder(
 
   if (!res.ok) {
     let message = "Error al crear pedido"
+    let body: unknown = null
     try {
-      const body = await res.json()
-      const parsed = parseCreateOrderErrorMessage(body)
-      if (parsed) message = parsed
+      body = await res.json()
     } catch {
       // keep default message
     }
+    if (res.status === 409) {
+      const reprice = parseRepriceRequired(body)
+      if (reprice) throw reprice
+    }
+    const parsed = parseCreateOrderErrorMessage(body)
+    if (parsed) message = parsed
     throw new Error(message)
   }
 

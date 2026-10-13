@@ -9,7 +9,6 @@ import {
   canAddProductToCart,
   clampValidQuantity,
   getMaxValidQuantity,
-  getMinQuantity,
   getSaleRuleLabel,
   getStockInsufficientMessage,
   isValidQuantity,
@@ -19,6 +18,7 @@ import {
   SecQuantityControl,
   initialQuantityForProduct,
 } from "@/components/sec-quantity-control"
+import { hasValidCatalogPrice } from "@/lib/price-list"
 import type { Product } from "@/types/catalog"
 
 interface ProductCardProps {
@@ -28,7 +28,6 @@ interface ProductCardProps {
 
 const PLACEHOLDER_WEBP = "/placeholder2.webp"
 const FALLBACK_SEAL = LOGO_SEAL_SRC
-const DEBUG_BARCODE = "6972229786055"
 
 function getStockStatus(stock: number) {
   if (stock === 0) {
@@ -65,7 +64,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [imageBroken, setImageBroken] = useState(false)
 
   const stockInsufficient = !canAddProductToCart(commercial)
-  const isOutOfStock = product.stock === 0 || stockInsufficient
+  const priceAvailable = hasValidCatalogPrice(product.price)
+  const isOutOfStock = product.stock === 0 || stockInsufficient || !priceAvailable
   const stockStatus = getStockStatus(product.stock)
   const saleRuleLabel = getSaleRuleLabel(commercial)
 
@@ -79,19 +79,6 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     setQuantity(initialQuantityForProduct(p))
     setQtyError("")
   }, [product.id, product.quantity_step, product.sale_type, product.stock, product.type])
-
-  useEffect(() => {
-    if (product.barcode?.trim() !== DEBUG_BARCODE) return
-    const p = withCommercialDefaults(product)
-    console.log("[ProductCard SEC debug]", {
-      name: p.name,
-      type: p.type,
-      units_per_box: p.units_per_box,
-      sale_type: p.sale_type,
-      quantity_step: p.quantity_step,
-      initialQuantity: getMinQuantity(p),
-    })
-  }, [product])
 
   useEffect(() => {
     if (product.stock <= 0) return
@@ -202,9 +189,15 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             </p>
           ) : null}
 
-          <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums">
-            ${product.price.toLocaleString("es-CL")}
-          </p>
+          {priceAvailable ? (
+            <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums">
+              ${product.price.toLocaleString("es-CL")}
+            </p>
+          ) : (
+            <p className="text-sm font-semibold text-muted-foreground">
+              Precio no disponible
+            </p>
+          )}
 
           <SecQuantityControl
             product={commercial}
