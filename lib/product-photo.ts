@@ -57,6 +57,7 @@ export function productInStockMissingCatalogPhoto(
 ): boolean {
   if (product.stock <= 0) return false
   if (brokenImageIds?.has(product.id)) return true
+  if (product.imageFromLocal === true && !productUsesResolvedPlaceholderImage(product.image)) return false
   if (product.imageFromApi === false) return true
   if (productUsesResolvedPlaceholderImage(product.image)) return true
   if (apiImagePathLooksLikePlaceholder(product.catalogImageRaw, product.image)) return true
