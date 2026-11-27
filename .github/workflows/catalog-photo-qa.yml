@@ -3,6 +3,11 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'app/catalog/**'
+      - 'hooks/use-broken-catalog-images.ts'
+      - 'components/product-card.tsx'
+      - 'lib/catalog-filters.ts'
+      - 'lib/catalog-page-window.ts'
       - 'lib/local-catalog-photo.ts'
       - 'lib/product-photo.ts'
       - 'services/api.ts'

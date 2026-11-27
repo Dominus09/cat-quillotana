@@ -36,12 +36,16 @@ export function uniqueCatalogBarcodes(items: ReadonlyArray<{ id: number; barcode
   return new Set([...seen.entries()].filter(([, ids]) => ids.size === 1).map(([code]) => code))
 }
 
+let parsedManifest: PhotoManifest | undefined
+
 export function readLocalCatalogPhotoManifest(): PhotoManifest {
   if (process.env.NEXT_PUBLIC_CATALOG_LOCAL_PHOTOS_ENABLED !== "1") return {}
+  if (parsedManifest) return parsedManifest
   try {
     const data: unknown = JSON.parse(process.env.NEXT_PUBLIC_CATALOG_PHOTO_MANIFEST || "{}")
     if (!data || typeof data !== "object" || Array.isArray(data)) return {}
-    return data as PhotoManifest
+    parsedManifest = data as PhotoManifest
+    return parsedManifest
   } catch {
     return {}
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { memo, useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart } from "lucide-react"
@@ -56,7 +56,7 @@ function initialImageSrc(product: Product): string {
   return primary ? primary : PLACEHOLDER_WEBP
 }
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const commercial = withCommercialDefaults(product)
   const [quantity, setQuantity] = useState(() => initialQuantityForProduct(commercial))
   const [qtyError, setQtyError] = useState("")
@@ -232,4 +232,4 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       </div>
     </article>
   )
-}
+})

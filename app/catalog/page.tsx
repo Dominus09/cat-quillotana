@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Download, Filter, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, Filter, Loader2, ImageOff } from "lucide-react"
 import { useCatalog } from "@/hooks/use-catalog"
 import { useBrokenCatalogImages } from "@/hooks/use-broken-catalog-images"
 import { ProductCard } from "@/components/product-card"
@@ -26,6 +26,7 @@ import {
 import { buildMissingPhotoCsvRows, productInStockMissingCatalogPhoto } from "@/lib/product-photo"
 import { LOGO_SEAL_SRC } from "@/lib/branding-assets"
 import { filterCatalogProducts } from "@/lib/catalog-filters"
+import { catalogPageWindow, catalogFilterKey } from "@/lib/catalog-page-window"
 import { useCartPriceSync } from "@/hooks/use-cart-price-sync"
 import { CartPriceNotice } from "@/components/cart-price-notice"
 import {
@@ -53,6 +54,9 @@ export default function CatalogPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [pageChoice, setPageChoice] = useState({ key: "", page: 0 })
+  const [scanRequested, setScanRequested] = useState(false)
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   const { products: productsForList, isLoading, error } = useCatalog(apiInStockOnly)
   const cartPriceNotice = useCartPriceSync(session?.price_list, setCart)
@@ -65,7 +69,7 @@ export default function CatalogPage() {
 
   const { brokenImageIds, imageProbeState } = useBrokenCatalogImages(
     productsForList,
-    showMissingPhotoExport
+    showMissingPhotoExport && scanRequested
   )
 
   const clearCatalogFilters = useCallback(() => {
@@ -81,13 +85,14 @@ export default function CatalogPage() {
   )
 
   const missingPhotoCount = useMemo(() => {
-    if (!showMissingPhotoExport) return 0
+    if (!showMissingPhotoExport || !scanRequested || imageProbeState !== "done") return 0
     return productsForList.filter((p) =>
       productInStockMissingCatalogPhoto(p, brokenImageIds)
     ).length
-  }, [showMissingPhotoExport, productsForList, brokenImageIds])
+  }, [showMissingPhotoExport, scanRequested, imageProbeState, productsForList, brokenImageIds])
 
   const handleDownloadMissingPhotosCsv = useCallback(() => {
+    if (!showMissingPhotoExport || !scanRequested || imageProbeState !== "done") return
     const csv = buildMissingPhotoCsvRows(productsForList, brokenImageIds)
     const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
@@ -96,7 +101,7 @@ export default function CatalogPage() {
     a.download = `productos-con-stock-sin-foto-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [productsForList, brokenImageIds])
+  }, [showMissingPhotoExport, scanRequested, imageProbeState, productsForList, brokenImageIds])
 
   useEffect(() => {
     setMounted(true)
@@ -120,15 +125,22 @@ export default function CatalogPage() {
     [productsForList, clientFilters]
   )
 
+  // Preserve every matching product in the result count, but mount at most 48 cards.
+  const filterKey = catalogFilterKey(clientFilters, apiInStockOnly)
+  const windowed = catalogPageWindow(filteredProducts, pageChoice.key === filterKey ? pageChoice.page : 0)
   const productKeyContext = useMemo(
     () => buildProductKeyContext(filteredProducts),
     [filteredProducts]
   )
+  function goToPage(page: number) {
+    setPageChoice({ key: filterKey, page })
+    resultsRef.current?.scrollIntoView({ block: "start", behavior: "instant" })
+  }
 
-  const handleAddToCart = (product: Product, quantity: number) => {
+  const handleAddToCart = useCallback((product: Product, quantity: number) => {
     const updatedCart = addToCart(product, quantity)
     setCart(updatedCart)
-  }
+  }, [])
 
   const handleUpdateQuantity = (productId: number, quantity: number) => {
     const updatedCart = updateCartItem(productId, quantity)
@@ -265,43 +277,35 @@ export default function CatalogPage() {
             />
 
             {/* Products Count */}
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
+            <div ref={resultsRef} className="mb-4 scroll-mt-32 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="text-sm text-muted-foreground" aria-live="polite">
                 {getCatalogResultsLabel(filteredProducts.length, clientFilters)}
-              </p>
+              </p>{windowed.pageCount > 1 ? <p className="mt-1 text-xs text-muted-foreground">Mostrando {windowed.start + 1}–{windowed.end} de {filteredProducts.length.toLocaleString("es-CL")}</p> : null}</div>
               {showMissingPhotoExport ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 h-9 gap-2 border-border"
-                  onClick={handleDownloadMissingPhotosCsv}
-                  disabled={imageProbeState === "running" || missingPhotoCount === 0}
-                  title="CSV: tipo, código de barras, stock, detalle (incluye enlaces rotos y sin imagen en API)"
-                >
-                  {imageProbeState === "running" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  {imageProbeState === "running"
-                    ? "Comprobando fotos…"
-                    : `Lista sin foto (${missingPhotoCount})`}
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!scanRequested ? <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setScanRequested(true)}><ImageOff className="w-4 h-4" /> Revisar fotos</Button> : imageProbeState !== "done" ? <><span role="status" className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Comprobando fotos…</span><Button type="button" variant="ghost" size="sm" onClick={() => setScanRequested(false)}>Cancelar</Button></> : <><Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleDownloadMissingPhotosCsv} disabled={missingPhotoCount === 0}><Download className="w-4 h-4" /> Lista sin foto ({missingPhotoCount})</Button><Button type="button" variant="ghost" size="sm" onClick={() => setScanRequested(false)}>Cerrar revisión</Button></>}
+                </div>
               ) : null}
             </div>
 
             {/* Product Grid */}
             {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredProducts.map((product, index) => (
-                  <ProductCard
-                    key={getProductReactKey(product, index, productKeyContext)}
-                    product={product}
-                    onAddToCart={handleAddToCart}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {windowed.items.map((product, index) => (
+                    <ProductCard
+                      key={getProductReactKey(product, windowed.start + index, productKeyContext)}
+                      product={product}
+                      onAddToCart={handleAddToCart}
+                    />
+                  ))}
+                </div>
+                {windowed.pageCount > 1 ? <nav aria-label="Páginas del catálogo" className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <Button variant="outline" size="sm" disabled={windowed.page === 0} onClick={() => goToPage(windowed.page - 1)}><ChevronLeft className="w-4 h-4" /> Anterior</Button>
+                  <span className="text-sm tabular-nums">Página {windowed.page + 1} de {windowed.pageCount}</span>
+                  <Button variant="outline" size="sm" disabled={windowed.page + 1 === windowed.pageCount} onClick={() => goToPage(windowed.page + 1)}>Siguiente <ChevronRight className="w-4 h-4" /></Button>
+                </nav> : null}
+              </>
             ) : (
               <div className="text-center py-12">
                 <Image
