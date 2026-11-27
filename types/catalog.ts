@@ -11,6 +11,8 @@ export interface Product {
   barcode?: string
   /** La API envió una ruta/URL de imagen no vacía. */
   imageFromApi?: boolean
+  /** Foto estática verificada durante el build. */
+  imageFromLocal?: boolean
   /** Valor crudo de `image` en la API (antes de resolver URL), para heurísticas. */
   catalogImageRaw?: string
   units_per_box?: number | null

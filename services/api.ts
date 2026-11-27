@@ -1,4 +1,5 @@
 import { parseSaleType } from "@/lib/sale-quantity"
+import { localCatalogPhoto, readLocalCatalogPhotoManifest, uniqueCatalogBarcodes } from "@/lib/local-catalog-photo"
 import { isValidCatalogPriceList, type CatalogPriceList } from "@/lib/price-list"
 import type { Product, SaleType } from "@/types/catalog"
 
@@ -173,7 +174,13 @@ export async function getCatalog(
   }
 
   const raw: ApiCatalogItem[] = await res.json()
-  return raw.map(mapApiToProduct)
+  const manifest = readLocalCatalogPhotoManifest()
+  const unique = uniqueCatalogBarcodes(raw)
+  return raw.map(item => {
+    const product = mapApiToProduct(item)
+    const local = unique.has(product.barcode || "") ? localCatalogPhoto(product.barcode, item.image, manifest) : null
+    return local ? { ...product, image: local, imageFromLocal: true } : product
+  })
 }
 
 export interface CreateOrderClient {
