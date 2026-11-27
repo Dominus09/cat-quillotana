@@ -41,25 +41,14 @@ export function filterCatalogProducts(
   products: Product[],
   filters: CatalogClientFilters
 ): Product[] {
-  let filtered = products
-
-  if (filters.searchQuery.trim()) {
-    filtered = filtered.filter((p) =>
-      matchesCatalogSearch(p, filters.searchQuery)
-    )
-  }
-
-  if (filters.selectedCategory) {
-    filtered = filtered.filter((p) => p.type === filters.selectedCategory)
-  }
-
-  if (filters.stockFilter === "available") {
-    filtered = filtered.filter((p) => p.stock > 10)
-  } else if (filters.stockFilter === "low") {
-    filtered = filtered.filter((p) => p.stock > 0 && p.stock <= 10)
-  }
-
-  return filtered
+  const q = filters.searchQuery.trim().toLowerCase()
+  if (!q && !filters.selectedCategory && filters.stockFilter === "all") return products
+  return products.filter(p => {
+    if (filters.selectedCategory && p.type !== filters.selectedCategory) return false
+    if (filters.stockFilter === "available" && !(p.stock > 10)) return false
+    if (filters.stockFilter === "low" && !(p.stock > 0 && p.stock <= 10)) return false
+    return !q || p.name.toLowerCase().includes(q) || p.type.toLowerCase().includes(q) || (p.barcode ?? "").toLowerCase().includes(q)
+  })
 }
 
 export function getCatalogStockFilterLabel(

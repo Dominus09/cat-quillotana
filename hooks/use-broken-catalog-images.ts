@@ -4,83 +4,68 @@ import { useEffect, useState } from "react"
 import type { Product } from "@/types/catalog"
 import { productUsesResolvedPlaceholderImage } from "@/lib/product-photo"
 
-function probeImageUrl(src: string, timeoutMs: number): Promise<boolean> {
+function probeImageUrl(src: string, timeoutMs: number, signal: AbortSignal): Promise<boolean> {
   return new Promise((resolve) => {
+    if (signal.aborted) { resolve(false); return }
     const img = new Image()
     let settled = false
-    const finish = (ok: boolean) => {
+    const finish = (ok: boolean, stop = false) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
+      signal.removeEventListener("abort", abort)
       img.onload = null
       img.onerror = null
+      if (stop) img.removeAttribute("src")
       resolve(ok)
     }
-    const timer = window.setTimeout(() => finish(false), timeoutMs)
+    const abort = () => finish(false, true)
+    const timer = window.setTimeout(() => finish(false, true), timeoutMs)
+    signal.addEventListener("abort", abort, { once: true })
     img.onload = () => finish(true)
     img.onerror = () => finish(false)
     img.src = src
   })
 }
 
-/**
- * Comprueba en el navegador si la URL de imagen carga (alineado con onError de la tarjeta).
- * Solo se prueban productos con stock y URL que no sea ya un placeholder resuelto.
- */
+type ProbeResult = { products: Product[]; ids: ReadonlySet<number> }
+const EMPTY_IDS: ReadonlySet<number> = new Set()
+
+/** Explicit, cancellable photo audit. Never run automatically on catalog entry. */
 export function useBrokenCatalogImages(products: Product[], enabled: boolean) {
-  const [brokenImageIds, setBrokenImageIds] = useState<ReadonlySet<number>>(() => new Set())
-  const [probeState, setProbeState] = useState<"idle" | "running" | "done">("idle")
-
+  const [result, setResult] = useState<ProbeResult | null>(null)
   useEffect(() => {
-    if (!enabled) {
-      setBrokenImageIds(new Set())
-      setProbeState("done")
-      return
+    if (!enabled) { setResult(null); return }
+    const controller = new AbortController()
+    const candidates = new Map<string, number[]>()
+    for (const p of products) {
+      if (p.stock <= 0 || !(p.imageFromApi === true || p.imageFromLocal === true) ||
+          productUsesResolvedPlaceholderImage(p.image)) continue
+      const ids = candidates.get(p.image) || []
+      ids.push(p.id)
+      candidates.set(p.image, ids)
     }
-
-    let cancelled = false
-
-    const candidates = products.filter(
-      (p) =>
-        p.stock > 0 &&
-        p.imageFromApi === true &&
-        !productUsesResolvedPlaceholderImage(p.image)
-    )
-
-    if (candidates.length === 0) {
-      setBrokenImageIds(new Set())
-      setProbeState("done")
-      return
-    }
-
-    setProbeState("running")
-    setBrokenImageIds(new Set())
-
+    const entries = [...candidates.entries()]
     const failed = new Set<number>()
-    const concurrency = 8
     let nextIndex = 0
-
-    const worker = async () => {
-      while (!cancelled) {
+    async function worker() {
+      while (!controller.signal.aborted) {
         const i = nextIndex++
-        if (i >= candidates.length) break
-        const p = candidates[i]
-        const ok = await probeImageUrl(p.image, 12000)
-        if (cancelled) return
-        if (!ok) failed.add(p.id)
+        if (i >= entries.length) break
+        const [src, ids] = entries[i]
+        const ok = await probeImageUrl(src, 12000, controller.signal)
+        if (controller.signal.aborted) return
+        if (!ok) for (const id of ids) failed.add(id)
       }
     }
-
-    void Promise.all(Array.from({ length: concurrency }, () => worker())).then(() => {
-      if (cancelled) return
-      setBrokenImageIds(new Set(failed))
-      setProbeState("done")
+    void Promise.all(Array.from({ length: Math.min(4, entries.length) }, () => worker())).then(() => {
+      if (!controller.signal.aborted) setResult({ products, ids: failed })
     })
-
-    return () => {
-      cancelled = true
-    }
+    return () => controller.abort()
   }, [products, enabled])
-
-  return { brokenImageIds, imageProbeState: probeState }
+  const done = enabled && result?.products === products
+  return {
+    brokenImageIds: done ? result.ids : EMPTY_IDS,
+    imageProbeState: (done ? "done" : enabled ? "running" : "idle") as "idle" | "running" | "done",
+  }
 }
